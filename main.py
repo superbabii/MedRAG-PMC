@@ -3,7 +3,7 @@ import re
 from src.medrag import MedRAG
 
 # Load the benchmark JSON file
-with open('bioasq.json', 'r') as f:
+with open('mmlu-med.json', 'r') as f:
     benchmark_data = json.load(f)
 
 # Get all questions
