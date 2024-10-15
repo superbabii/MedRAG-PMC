@@ -10,7 +10,8 @@ with open('mmlu-med.json', 'r') as f:
 all_questions = list(benchmark_data.items())
 
 # Limit to the first 200 questions
-all_questions = all_questions[:200]
+# all_questions = all_questions[:200]
+all_questions = all_questions[200:400]
 
 # Initialize the MedRAG system
 cot = MedRAG(llm_name="axiong/PMC_LLaMA_13B", rag=False)
