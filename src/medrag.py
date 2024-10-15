@@ -47,7 +47,7 @@ class MedRAG:
             do_sample=False,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.eos_token_id,
-            max_length=200,
+            max_length=self.max_length,
             truncation=True,
             stopping_criteria=stopping_criteria
         )
