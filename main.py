@@ -1,5 +1,4 @@
 import json
-import random
 import re
 from src.medrag import MedRAG
 
@@ -7,8 +6,8 @@ from src.medrag import MedRAG
 with open('benchmark.json', 'r') as f:
     benchmark_data = json.load(f)
 
-# Get random questions
-random_questions = random.sample(list(benchmark_data.items()), 5)
+# Get all questions
+all_questions = list(benchmark_data.items())
 
 # Initialize the MedRAG system
 cot = MedRAG(llm_name="axiong/PMC_LLaMA_13B", rag=False)
@@ -16,6 +15,7 @@ cot = MedRAG(llm_name="axiong/PMC_LLaMA_13B", rag=False)
 # Store the results of comparisons
 results = []
 correct_count = 0
+total_questions = len(all_questions)  # Get the total number of questions
 
 # Function to extract the answer choice
 def extract_answer_choice(generated_answer):
@@ -30,7 +30,7 @@ def extract_answer_choice(generated_answer):
     return None  # If no valid option is found, return None
 
 # Iterate over each question and get the generated answer
-for question_id, question_data in random_questions:
+for question_id, question_data in all_questions:
     # Extract the question, options, and correct answer
     question = question_data['question']
     options = question_data['options']
@@ -70,6 +70,9 @@ for result in results:
     print(f"Is Correct: {result['is_correct']}")
     print('-' * 50)
 
+# Print the number of all questions
+print(f"Total number of questions: {total_questions}")
+
 # Calculate accuracy
-accuracy = correct_count / len(results) * 100
+accuracy = correct_count / total_questions * 100
 print(f"Accuracy: {accuracy:.2f}%")
