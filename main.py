@@ -9,6 +9,9 @@ with open('bioasq.json', 'r') as f:
 # Get all questions
 all_questions = list(benchmark_data.items())
 
+# Limit to the first 200 questions
+all_questions = all_questions[:200]
+
 # Initialize the MedRAG system
 cot = MedRAG(llm_name="axiong/PMC_LLaMA_13B", rag=False)
 
