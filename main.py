@@ -1,5 +1,6 @@
 import json
 import random
+import re
 from src.medrag import MedRAG
 
 # Load the benchmark JSON file
