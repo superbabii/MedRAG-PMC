@@ -1,6 +1,6 @@
 import json
 import random
-from medrag import MedRAG
+from src.medrag import MedRAG
 
 # Load the benchmark JSON file
 with open('benchmark.json', 'r') as f:
