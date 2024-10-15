@@ -10,9 +10,10 @@ from template import *
 
 class MedRAG:
 
-    def __init__(self, llm_name="OpenAI/gpt-3.5-turbo-16k", rag=True):
+    def __init__(self, llm_name="OpenAI/gpt-3.5-turbo-16k", rag=True, cache_dir=None):
         self.llm_name = llm_name
         self.rag = rag
+        self.cache_dir = cache_dir
         self.docExt = None
 
         self.retrieval_system = None
