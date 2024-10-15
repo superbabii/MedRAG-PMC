@@ -18,13 +18,15 @@ correct_count = 0
 
 # Function to extract the answer choice
 def extract_answer_choice(generated_answer):
-    # Extract answer choice from generated answer string
-    answer = generated_answer.strip().upper()  # Convert to uppercase for uniformity
-    # Look for a pattern like 'OPTION X' or 'ANSWER IS X'
-    for option in ['A', 'B', 'C', 'D']:
-        if option in answer:
-            return option
-    return None
+    # Look for "OPTION X IS CORRECT" or "ANSWER IS X"
+    match = re.search(r"OPTION ([A-D]) IS CORRECT", generated_answer, re.IGNORECASE)
+    if match:
+        return match.group(1).upper()  # Return the extracted option (A, B, C, or D)
+    # As a fallback, look for "ANSWER IS X"
+    match = re.search(r"ANSWER IS ([A-D])", generated_answer, re.IGNORECASE)
+    if match:
+        return match.group(1).upper()
+    return None  # If no valid option is found, return None
 
 # Iterate over each question and get the generated answer
 for question_id, question_data in random_questions:
