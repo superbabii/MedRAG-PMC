@@ -1,13 +1,13 @@
 import json
 import random
-from src.medrag import MedRAG
+from medrag import MedRAG
 
 # Load the benchmark JSON file
 with open('benchmark.json', 'r') as f:
     benchmark_data = json.load(f)
 
 # Get 5 random questions
-random_questions = random.sample(list(benchmark_data.items()), 1)
+random_questions = random.sample(list(benchmark_data.items()), 5)
 
 # Initialize the MedRAG system
 cot = MedRAG(llm_name="axiong/PMC_LLaMA_13B", rag=False)
@@ -24,17 +24,20 @@ for question_id, question_data in random_questions:
     correct_answer = question_data['answer']
 
     # Use MedRAG to generate the answer
-    generated_answer, _, _ = cot.answer(question=question, options=options)
+    generated_answer = cot.medrag_answer(question=question, options=options)
     
     print(f"Generated Answer (Raw): {generated_answer}")
     
-    if not generated_answer:
-        print(f"No answer generated for question ID: {question_id}")
+    # Parse the generated answer
+    generated_answer_choice = None
+    try:
+        generated_answer_dict = json.loads(generated_answer)
+        generated_answer_choice = generated_answer_dict.get('answer_choice', None)
+    except json.JSONDecodeError:
+        generated_answer_choice = generated_answer.strip()  # Handle raw text case
 
-    generated_answer_dict = json.loads(generated_answer)
-    generated_choice = generated_answer_dict.get('answer_choice', None)
     # Compare the generated answer with the correct one
-    is_correct = correct_answer == generated_choice[0]
+    is_correct = correct_answer == generated_answer_choice
     if is_correct:
         correct_count += 1
 
@@ -42,7 +45,7 @@ for question_id, question_data in random_questions:
         'question_id': question_id,
         'question': question,
         'correct_answer': correct_answer,
-        'generated_answer': generated_choice,
+        'generated_answer': generated_answer_choice,
         'is_correct': is_correct
     }
     results.append(result)
