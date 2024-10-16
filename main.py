@@ -118,6 +118,9 @@ for question_id, question_data in all_questions:
             correct_count += 1
         
         answered_questions += 1
+        
+        accuracy = correct_count / answered_questions * 100 if answered_questions > 0 else 0
+        print(f"Accuracy: {accuracy:.2f}%")
 
         result = {
             'question_id': question_id,
