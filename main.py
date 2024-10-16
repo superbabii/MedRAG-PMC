@@ -6,14 +6,14 @@ from src.medrag import MedRAG
 
 
 # Load the benchmark JSON file
-with open('pubmedqa.json', 'r') as f:
+with open('medmcqa.json', 'r') as f:
     benchmark_data = json.load(f)
 
 # Get all questions
 all_questions = list(benchmark_data.items())
 
 # Limit to the first 200 questions
-all_questions = all_questions[:800]
+all_questions = all_questions[:200]
 # all_questions = all_questions[600:1000]
 # all_questions = all_questions[400:600]
 # all_questions = all_questions[600:800]
