@@ -11,14 +11,14 @@ with open('pubmedqa.json', 'r') as f:
 all_questions = list(benchmark_data.items())
 
 # Limit to the first 200 questions
-all_questions = all_questions[:800]
+# all_questions = all_questions[:800]
 # all_questions = all_questions[600:1000]
 # all_questions = all_questions[400:600]
 # all_questions = all_questions[600:800]
 # all_questions = all_questions[800:1000]
 
 # Get random questions
-# all_questions = random.sample(list(benchmark_data.items()), 100)
+all_questions = random.sample(list(benchmark_data.items()), 5)
 
 # Initialize the MedRAG system
 cot = MedRAG(llm_name="axiong/PMC_LLaMA_13B", rag=False)
@@ -30,18 +30,55 @@ total_questions = len(all_questions)  # Get the total number of questions
 
 # Function to extract the answer choice
 def extract_answer_choice(generated_answer):
+    # Split the generated answer into lines for easier processing
+    lines = generated_answer.split('\n')
+    
+    # Initialize a dictionary to map option texts to their letters
+    option_map = {}
+    
+    # First, parse the options to build the mapping
+    options_section = False
+    for line in lines:
+        if re.match(r'^Options?:', line, re.IGNORECASE):
+            options_section = True
+            continue
+        if options_section:
+            option_match = re.match(r'^([A-D])\.\s*(.+)', line.strip(), re.IGNORECASE)
+            if option_match:
+                letter = option_match.group(1).upper()
+                text = option_match.group(2).strip().lower()
+                option_map[text] = letter
+            else:
+                # If the line doesn't match an option, end the options section
+                options_section = False
+    
     # Look for "OPTION X IS CORRECT" or "ANSWER IS X"
-    match = re.search(r"OPTION ([A-D]) IS CORRECT", generated_answer, re.IGNORECASE)
+    match = re.search(r"OPTION\s+([A-D])\s+IS\s+CORRECT", generated_answer, re.IGNORECASE)
     if match:
         return match.group(1).upper()  # Return the extracted option (A, B, C, or D)
+    
     # As a fallback, look for "ANSWER IS X"
-    match = re.search(r"ANSWER IS ([A-D])", generated_answer, re.IGNORECASE)
+    match = re.search(r"ANSWER\s+IS\s+([A-D])", generated_answer, re.IGNORECASE)
     if match:
         return match.group(1).upper()
-    # Look for "Answer: X"
+    
+    # Look for "Answer: X" where X is a letter
     match = re.search(r"Answer:\s*([A-D])", generated_answer, re.IGNORECASE)
     if match:
-        return match.group(1).upper()  # Return the extracted option (A, B, C, or D)
+        return match.group(1).upper()
+    
+    # Look for "Answer: [Option Text]"
+    match = re.search(r"Answer:\s*([A-Da-d])", generated_answer, re.IGNORECASE)
+    if match:
+        # This handles cases like "Answer: A"
+        return match.group(1).upper()
+    else:
+        # Attempt to extract the answer text and map it to the corresponding option letter
+        answer_text_match = re.search(r"Answer:\s*(.+)", generated_answer, re.IGNORECASE)
+        if answer_text_match:
+            answer_text = answer_text_match.group(1).strip().lower()
+            return option_map.get(answer_text, None)
+    
     return None  # If no valid option is found, return None
 
 # Iterate over each question and get the generated answer
