@@ -148,8 +148,8 @@ for question_id, question_data in all_questions:
 #     print('-' * 50)
 
 # Print the number of all questions
-print(f"Total number of questions: {answered_questions}")
+# print(f"Total number of questions: {answered_questions}")
 
 # Calculate accuracy
-accuracy = correct_count / answered_questions * 100 if answered_questions > 0 else 0
-print(f"Accuracy: {accuracy:.2f}%")
+# accuracy = correct_count / answered_questions * 100 if answered_questions > 0 else 0
+# print(f"Accuracy: {accuracy:.2f}%")
