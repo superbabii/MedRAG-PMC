@@ -63,7 +63,8 @@ class MedRAG:
                 max_length=self.max_length,  # Reduce length for faster responses
                 do_sample=True,
                 top_k=50,
-                temperature=0.7  # Add some randomness
+                temperature=0.7,  # Add some randomness
+                pad_token_id=self.model.config.pad_token_id
             )
         return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
 
