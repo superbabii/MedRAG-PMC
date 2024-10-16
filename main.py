@@ -123,25 +123,25 @@ for question_id, question_data in all_questions:
         print(f"Correct Answer: {correct_answer}")
         print(f"Current Accuracy: {accuracy:.2f}%")
 
-        result = {
-            'question_id': question_id,
-            'question': question,
-            'correct_answer': correct_answer,
-            'generated_answer': generated_choice,
-            'is_correct': is_correct
-        }
-        results.append(result)
+        # result = {
+        #     'question_id': question_id,
+        #     'question': question,
+        #     'correct_answer': correct_answer,
+        #     'generated_answer': generated_choice,
+        #     'is_correct': is_correct
+        # }
+        # results.append(result)
     except TimeoutException:
         print(f"Skipping question ID: {question_id} due to timeout.")
         continue
 
 # Print the results of the comparison
-for result in results:
-    print(f"Question: {result['question']}")
-    print(f"Correct Answer: {result['correct_answer']}")
-    print(f"Generated Answer: {result['generated_answer']}")
-    print(f"Is Correct: {result['is_correct']}")
-    print('-' * 50)
+# for result in results:
+#     print(f"Question: {result['question']}")
+#     print(f"Correct Answer: {result['correct_answer']}")
+#     print(f"Generated Answer: {result['generated_answer']}")
+#     print(f"Is Correct: {result['is_correct']}")
+#     print('-' * 50)
 
 # Print the number of all questions
 print(f"Total number of questions: {answered_questions}")
