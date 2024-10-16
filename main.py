@@ -38,6 +38,10 @@ def extract_answer_choice(generated_answer):
     match = re.search(r"ANSWER IS ([A-D])", generated_answer, re.IGNORECASE)
     if match:
         return match.group(1).upper()
+    # Look for "Answer: X"
+    match = re.search(r"Answer:\s*([A-D])", generated_answer, re.IGNORECASE)
+    if match:
+        return match.group(1).upper()  # Return the extracted option (A, B, C, or D)
     return None  # If no valid option is found, return None
 
 # Iterate over each question and get the generated answer
