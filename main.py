@@ -29,7 +29,7 @@ cot = MedRAG(llm_name="axiong/PMC_LLaMA_13B", rag=False)
 results = []
 correct_count = 0
 answered_questions = 0
-all_questions = 0
+number_all_questions = 0
 
 # Define a timeout handler
 class TimeoutException(Exception):
@@ -98,7 +98,7 @@ for question_id, question_data in all_questions:
     options = question_data['options']
     correct_answer = question_data['answer']
 
-    all_questions += 1
+    number_all_questions += 1
     # Use MedRAG to generate the answer with a timeout
     signal.alarm(30)  # Set alarm for 60 seconds
     try:
@@ -125,7 +125,7 @@ for question_id, question_data in all_questions:
         print(f"Correct Answer: {correct_answer}")
         print(f"Is Correct: {is_correct}")
         print(f"Current Accuracy: {accuracy:.2f}%")        
-        print(f"All Questions(Answered Questions): {all_questions}({answered_questions})")
+        print(f"All Questions(Answered Questions): {number_all_questions}({answered_questions})")
 
         # result = {
         #     'question_id': question_id,
