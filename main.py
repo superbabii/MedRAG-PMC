@@ -28,7 +28,7 @@ cot = MedRAG(llm_name="axiong/PMC_LLaMA_13B", rag=False)
 # Store the results of comparisons
 results = []
 correct_count = 0
-total_questions = len(all_questions)  # Get the total number of questions
+answered_questions = 0
 
 # Define a timeout handler
 class TimeoutException(Exception):
@@ -42,14 +42,11 @@ signal.signal(signal.SIGALRM, timeout_handler)
 
 # Function to extract the answer choice
 def extract_answer_choice(generated_answer):
-    # Split the generated answer into lines for easier processing
+
     lines = generated_answer.split('\n')
-    
-    # Initialize a dictionary to map option texts to their letters
     option_map = {}
-    
-    # First, parse the options to build the mapping
     options_section = False
+    
     for line in lines:
         if re.match(r'^Options?:', line, re.IGNORECASE):
             options_section = True
@@ -119,6 +116,8 @@ for question_id, question_data in all_questions:
         is_correct = correct_answer == generated_choice
         if is_correct:
             correct_count += 1
+        
+        answered_questions += 1
 
         result = {
             'question_id': question_id,
@@ -141,8 +140,8 @@ for result in results:
     print('-' * 50)
 
 # Print the number of all questions
-print(f"Total number of questions: {total_questions}")
+print(f"Total number of questions: {answered_questions}")
 
 # Calculate accuracy
-accuracy = correct_count / total_questions * 100
+accuracy = correct_count / answered_questions * 100 if answered_questions > 0 else 0
 print(f"Accuracy: {accuracy:.2f}%")
