@@ -46,6 +46,8 @@ class MedRAG:
         # Verify pad_token_id is positive
         if self.model.config.pad_token_id < 0:
             raise ValueError(f"Invalid pad_token_id: {self.model.config.pad_token_id}. It should be a positive integer.")
+        else:
+            print("pad_token_id is valid and positive.")
 
     def generate(self, prompt):
         # Simplified text generation
