@@ -1,7 +1,9 @@
 import json
 import re
 import random
+import signal
 from src.medrag import MedRAG
+
 
 # Load the benchmark JSON file
 with open('pubmedqa.json', 'r') as f:
@@ -27,6 +29,16 @@ cot = MedRAG(llm_name="axiong/PMC_LLaMA_13B", rag=False)
 results = []
 correct_count = 0
 total_questions = len(all_questions)  # Get the total number of questions
+
+# Define a timeout handler
+class TimeoutException(Exception):
+    pass
+
+def timeout_handler(signum, frame):
+    raise TimeoutException("Timeout occurred while generating answer.")
+
+# Set the timeout limit to 60 seconds
+signal.signal(signal.SIGALRM, timeout_handler)
 
 # Function to extract the answer choice
 def extract_answer_choice(generated_answer):
@@ -88,31 +100,37 @@ for question_id, question_data in all_questions:
     options = question_data['options']
     correct_answer = question_data['answer']
 
-    # Use MedRAG to generate the answer
-    generated_answer = cot.medrag_answer(question=question, options=options)
-    
-    print(f"Generated Answer (Raw): {generated_answer}")
-    
-    # Extract the generated answer choice
-    generated_choice = extract_answer_choice(generated_answer)
+    # Use MedRAG to generate the answer with a timeout
+    signal.alarm(120)  # Set alarm for 60 seconds
+    try:
+        # Use MedRAG to generate the answer
+        generated_answer = cot.medrag_answer(question=question, options=options)
+        
+        print(f"Generated Answer (Raw): {generated_answer}")
+        
+        # Extract the generated answer choice
+        generated_choice = extract_answer_choice(generated_answer)
 
-    if not generated_choice:
-        print(f"No valid answer choice extracted for question ID: {question_id}")
+        if not generated_choice:
+            print(f"No valid answer choice extracted for question ID: {question_id}")
+            continue
+
+        # Compare the generated answer with the correct one
+        is_correct = correct_answer == generated_choice
+        if is_correct:
+            correct_count += 1
+
+        result = {
+            'question_id': question_id,
+            'question': question,
+            'correct_answer': correct_answer,
+            'generated_answer': generated_choice,
+            'is_correct': is_correct
+        }
+        results.append(result)
+    except TimeoutException:
+        print(f"Skipping question ID: {question_id} due to timeout.")
         continue
-
-    # Compare the generated answer with the correct one
-    is_correct = correct_answer == generated_choice
-    if is_correct:
-        correct_count += 1
-
-    result = {
-        'question_id': question_id,
-        'question': question,
-        'correct_answer': correct_answer,
-        'generated_answer': generated_choice,
-        'is_correct': is_correct
-    }
-    results.append(result)
 
 # Print the results of the comparison
 for result in results:
