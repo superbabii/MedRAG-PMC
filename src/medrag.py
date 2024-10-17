@@ -10,21 +10,40 @@ class MedRAG:
         self.rag = rag
         self.cache_dir = cache_dir
 
-        # Simplified to load model once and reuse
+        # Load the tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.llm_name,
             cache_dir=self.cache_dir,
             legacy=False  # Switch to new behavior
         )
-        self.model = transformers.LlamaForCausalLM.from_pretrained(self.llm_name, cache_dir=self.cache_dir, torch_dtype=torch.bfloat16)
 
-        self.max_length = 2048  # Shorter max length for faster inference
-        print(torch.cuda.is_available())
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = self.model.to(self.device)  # Move the model to GPU if available
+        # Load the model using bf16 for optimized memory usage
+        self.model = transformers.LlamaForCausalLM.from_pretrained(
+            self.llm_name, 
+            cache_dir=self.cache_dir, 
+            torch_dtype=torch.bfloat16  # Use bf16 for better memory management
+        )
+
+        # Set max length to a smaller value for faster inference
+        self.max_length = 2048
         
-        # Ensure tokenizer has pad token
-        # self._set_pad_token()
+        # Check if CUDA is available and move the model to the appropriate device
+        if torch.cuda.is_available():
+            print("CUDA is available. Moving model to GPU.")
+            self.device = torch.device("cuda")
+            self.model = self.model.to(self.device)
+        else:
+            print("CUDA not available. Using CPU.")
+            self.device = torch.device("cpu")
+            self.model = self.model.to(self.device)
+        
+        # Ensure the tokenizer has a pad token if it doesn't already
+        if self.tokenizer.pad_token is None:
+            print("Tokenizer has no pad token, setting pad token to eos_token.")
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        
+        # Print device status for confirmation
+        print(f"Model loaded on device: {self.device}")
 
     def _set_pad_token(self):
         """
