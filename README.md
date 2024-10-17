@@ -36,16 +36,37 @@ The datasets are automatically downloaded when I clone this repository.
 
 ## Installation
 
-### 1. Clone the Repository
+### 1. Install CUDA Toolkit and NVIDIA Drivers (Optional for GPU support)
 
-First, clone this repository. The benchmark datasets will be downloaded automatically:
+If you plan to run the model on a GPU, you will need to install the NVIDIA CUDA toolkit and drivers:
+
+```bash
+sudo apt install nvidia-cuda-toolkit
+sudo apt install nvidia-driver-535
+```
+
+Make sure you have a compatible GPU before installing these packages.
+
+### 2. Verify CUDA Installation (Optional)
+
+After installing the CUDA toolkit and drivers, you can verify if CUDA is available with PyTorch by running the following command:
+
+```bash
+python3 -c "import torch; print(torch.cuda.is_available())"
+```
+
+If the output is `True`, then CUDA is available and ready for use with PyTorch. If `False`, check your installation and GPU compatibility.
+
+### 3. Clone the Repository
+
+Then, clone this repository. The benchmark datasets will be downloaded automatically:
 
 ```bash
 git clone https://github.com/superbabii/MedRAG-PMC-CoT.git
 cd MedRAG-PMC-CoT
 ```
 
-### 2. Install Dependencies
+### 4. Install Dependencies
 
 After cloning the repository, install the necessary dependencies by running:
 
@@ -138,3 +159,31 @@ Total: **4114 questions**.
 ## License
 
 This project is licensed under the MIT License.
+
+
+
+
+To incorporate the CUDA availability check into your README, you can add it as a verification step after the installation of the CUDA toolkit and drivers. Here's how the updated section would look:
+
+```markdown
+## Installation
+
+### 1. Clone the Repository
+
+First, clone this repository. The benchmark datasets will be downloaded automatically:
+
+```bash
+git clone https://github.com/superbabii/MedRAG-PMC-CoT.git
+cd MedRAG-PMC-CoT
+```
+
+### 2. Install Dependencies
+
+After cloning the repository, install the necessary dependencies by running:
+
+```bash
+pip install -r requirements.txt
+```
+
+This will install all the required packages for running the code.
+
