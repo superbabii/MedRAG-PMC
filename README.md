@@ -27,7 +27,7 @@ The reference benchmarks used for evaluation are from:
 - **mmlu-med.json**
 - **pubmedqa.json**
 
-The datasets are automatically downloaded when you clone this repository.
+The datasets are automatically downloaded when I clone this repository.
 
 ## Requirements
 
@@ -105,24 +105,35 @@ All Questions(Answered Questions): 100(14)
 
 ### Results and Accuracy
 
-As the script runs, it will print the current accuracy based on the number of correctly answered questions. Results can also be saved to a file for further analysis.
+As the script runs, it prints the current accuracy based on the number of correctly answered questions. Results can also be saved to a file for further analysis.
 
 ### Performance Comparison
 
-Your results show significant improvement over the published results from [**MIRAGE**](https://teddy-xionggz.github.io/MIRAGE/), especially across multiple benchmarks. Below is a comparison of your results versus the MIRAGE system:
+My results show significant improvement over the published results from [**MIRAGE**](https://teddy-xionggz.github.io/MIRAGE/), especially across multiple benchmarks. Below is a comparison of my results versus the MIRAGE system:
 
 | System               | LLM                | MMLU-Med | MedQA-US | MedMCQA | PubMedQA* | BioASQ-Y/N | Average |
 |----------------------|--------------------|----------|----------|---------|-----------|------------|---------|
 | **MIRAGE**            | PMC-LLaMA + CoT    | 52.16    | 44.38    | 46.55   | 55.80     | 63.11      | 52.40   |
-| **Your Result (Me)**  | PMC-LLaMA + CoT    | **59.80**| **53.23**| **51.85**| 43.55     | **63.75**  | **54.43**|
+| **This Result**    | PMC-LLaMA + CoT    | **59.80**| **53.23**| **51.85**| 43.55     | **63.75**  | **54.43** |
 
-The comparison shows that your approach performs better than the MIRAGE system in the following categories:
-- **MMLU-Med**: 59.80 (You) vs. 52.16 (MIRAGE)
-- **MedQA-US**: 53.23 (You) vs. 44.38 (MIRAGE)
-- **MedMCQA**: 51.85 (You) vs. 46.55 (MIRAGE)
-- **BioASQ-Y/N**: 63.75 (You) vs. 63.11 (MIRAGE)
+The comparison shows that my approach performs better than the MIRAGE system in the following categories:
+- **MMLU-Med**: 59.80 (This) vs. 52.16 (MIRAGE)
+- **MedQA-US**: 53.23 (This) vs. 44.38 (MIRAGE)
+- **MedMCQA**: 51.85 (This) vs. 46.55 (MIRAGE)
+- **BioASQ-Y/N**: 63.75 (This) vs. 63.11 (MIRAGE)
 
-While there was a slight decrease in performance for **PubMedQA** (43.55 vs. 55.80), your overall average score is higher at **54.43**, compared to **52.40** for MIRAGE.
+While there was a slight decrease in performance for **PubMedQA** (43.55 vs. 55.80), my overall average score is higher at **54.43**, compared to **52.40** for MIRAGE.
+
+### Questions Count
+
+The evaluation is based on the following number of questions per benchmark:
+- **MMLU-Med**: 1000 questions
+- **MedQA-US**: 1000 questions
+- **MedMCQA**: 1000 questions
+- **PubMedQA**: 494 questions
+- **BioASQ-Y/N**: 618 questions
+
+Total: **4114 questions**.
 
 ## License
 
