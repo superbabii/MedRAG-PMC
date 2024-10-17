@@ -22,7 +22,7 @@ class MedRAG:
             self.llm_name, 
             cache_dir=self.cache_dir, 
             torch_dtype=torch.bfloat16,
-            device_map="auto"
+            device_map="auto"  # Automatically split across available devices
         )
 
         # Set max length to a smaller value for faster inference
@@ -78,7 +78,9 @@ class MedRAG:
             padding=True,  # Enable padding if batching
             truncation=True,  # Truncate to handle long prompts
             max_length=self.max_length
-        ).to(self.device)
+        )
+
+        # No need to move inputs to the device manually with device_map="auto"
         with torch.no_grad():
             generated_ids = self.model.generate(
                 inputs['input_ids'],
@@ -88,6 +90,7 @@ class MedRAG:
                 temperature=0.7,
                 pad_token_id=self.model.config.pad_token_id
             )
+
         return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
 
     def medrag_answer(self, question, options=None, save_dir=None):
