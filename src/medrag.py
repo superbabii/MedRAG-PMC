@@ -30,6 +30,7 @@ class MedRAG:
         # Check if CUDA is available and move the model to the appropriate device
         if torch.cuda.is_available():
             print("CUDA is available. Moving model to GPU.")
+            torch.cuda.empty_cache()
             self.device = torch.device("cuda")
             self.model = self.model.to(self.device)
         else:
