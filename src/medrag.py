@@ -16,7 +16,7 @@ class MedRAG:
             cache_dir=self.cache_dir,
             legacy=False  # Switch to new behavior
         )
-        self.model = transformers.LlamaForCausalLM.from_pretrained(self.llm_name, cache_dir=self.cache_dir)
+        self.model = transformers.LlamaForCausalLM.from_pretrained(self.llm_name, cache_dir=self.cache_dir, torch_dtype=torch.bfloat16)
 
         self.max_length = 2048  # Shorter max length for faster inference
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
