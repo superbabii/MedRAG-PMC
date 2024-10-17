@@ -21,6 +21,9 @@ class MedRAG:
         self.max_length = 2048  # Shorter max length for faster inference
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)  # Move the model to GPU if available
+        
+        # Ensure tokenizer has pad token
+        self._set_pad_token()
 
     def _set_pad_token(self):
         """
