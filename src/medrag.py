@@ -28,24 +28,19 @@ class MedRAG:
         # Set max length to a smaller value for faster inference
         self.max_length = 2048
         
-        # Check if CUDA is available and move the model to the appropriate device
+        # Check if CUDA is available (for other use cases, but no need to move model manually)
         if torch.cuda.is_available():
-            print("CUDA is available. Moving model to GPU.")
-            torch.cuda.empty_cache()
-            self.device = torch.device("cuda")
-            self.model = self.model.to(self.device)
+            print("CUDA is available. Model is automatically moved by device_map.")
         else:
             print("CUDA not available. Using CPU.")
-            self.device = torch.device("cpu")
-            self.model = self.model.to(self.device)
-        
+
         # Ensure the tokenizer has a pad token if it doesn't already
         if self.tokenizer.pad_token is None:
             print("Tokenizer has no pad token, setting pad token to eos_token.")
             self.tokenizer.pad_token = self.tokenizer.eos_token
         
-        # Print device status for confirmation
-        print(f"Model loaded on device: {self.device}")
+        # Print confirmation that the model has been loaded on devices
+        print(f"Model automatically loaded on appropriate devices using `device_map`.")
 
     def _set_pad_token(self):
         """
