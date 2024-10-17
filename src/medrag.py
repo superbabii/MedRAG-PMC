@@ -21,7 +21,8 @@ class MedRAG:
         self.model = transformers.LlamaForCausalLM.from_pretrained(
             self.llm_name, 
             cache_dir=self.cache_dir, 
-            torch_dtype=torch.bfloat16  # Use bf16 for better memory management
+            torch_dtype=torch.bfloat16,
+            device_map="auto"
         )
 
         # Set max length to a smaller value for faster inference
