@@ -26,7 +26,7 @@ class MedRAG:
         )
 
         # Set max length to a smaller value for faster inference
-        self.max_length = 50
+        self.max_length = 100
         
         # Check if CUDA is available (for other use cases, but no need to move model manually)
         if torch.cuda.is_available():
