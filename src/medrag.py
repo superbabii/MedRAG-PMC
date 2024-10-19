@@ -68,9 +68,6 @@ class MedRAG:
             print("Tokenizer has no pad token, setting pad token to eos_token.")
             self.tokenizer.pad_token = self.tokenizer.eos_token
         
-        # Print confirmation that the model has been loaded on devices
-        print(f"Model automatically loaded on appropriate devices using `device_map`.")
-
     def generate(self, prompt):
         # Convert list of dictionaries to a single string if needed
         if isinstance(prompt, list):
