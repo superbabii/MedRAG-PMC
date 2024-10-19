@@ -161,6 +161,7 @@ for question_id, question_data in all_questions:
         print(f"Is Correct: {is_correct}")
         print(f"Current Accuracy: {accuracy:.2f}%")        
         print(f"All Questions(Answered Questions): {number_all_questions}({answered_questions})")
+        print('-' * 50)
 
         # result = {
         #     'question_id': question_id,
