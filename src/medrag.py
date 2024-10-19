@@ -5,7 +5,7 @@ import transformers
 from transformers import AutoTokenizer
 
 class MedRAG:
-    def __init__(self, llm_name="axiong/PMC_LLaMA_13B", rag=True, cache_dir=None):
+    def __init__(self, llm_name="Henrychur/MMed-Llama-3-8B", rag=True, cache_dir=None):
         self.llm_name = llm_name
         self.rag = rag
         self.cache_dir = cache_dir
@@ -39,6 +39,9 @@ class MedRAG:
             print("Tokenizer has no pad token, setting pad token to eos_token.")
             self.tokenizer.pad_token = self.tokenizer.eos_token
         
+        # Configure pad token settings
+        self._set_pad_token()
+
         # Print confirmation that the model has been loaded on devices
         print(f"Model automatically loaded on appropriate devices using `device_map`.")
 
@@ -68,6 +71,15 @@ class MedRAG:
             raise ValueError(f"Invalid pad_token_id: {self.model.config.pad_token_id}. It should be a positive integer.")
         else:
             print("pad_token_id is valid and positive.")
+        
+        # Check if pad_token_id is the same as eos_token_id
+        if self.tokenizer.pad_token_id == self.tokenizer.eos_token_id:
+            print("Warning: `pad_token_id` is set to the same value as `eos_token_id`. Consider setting a distinct pad token.")
+            # Optionally, set a distinct pad token if needed
+            self.tokenizer.pad_token = "[PAD]"
+            self.tokenizer.add_special_tokens({'pad_token': "[PAD]"})
+            self.model.resize_token_embeddings(len(self.tokenizer))
+            self.model.config.pad_token_id = self.tokenizer.pad_token_id
 
     def generate(self, prompt):
         # Simplified text generation
@@ -80,10 +92,14 @@ class MedRAG:
             max_length=self.max_length
         )
 
-        # No need to move inputs to the device manually with device_map="auto"
+        # Move inputs to the correct device
+        inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+
+        # Generate text
         with torch.no_grad():
             generated_ids = self.model.generate(
                 inputs['input_ids'],
+                attention_mask=inputs['attention_mask'],  # Explicitly set attention mask
                 max_length=self.max_length,  # Reduce length for faster responses
                 do_sample=True,
                 top_k=50,
