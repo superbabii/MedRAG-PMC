@@ -43,88 +43,45 @@ signal.signal(signal.SIGALRM, timeout_handler)
 
 # Function to extract the answer choice
 def extract_answer_choice(generated_answer):
-
-    lines = generated_answer.split('\n')
-    option_map = {}
-    options_section = False
-    
     # Map common answer words to corresponding option letters
     word_to_option = {
         "yes": "A",
         "no": "B",
         "maybe": "C"
     }
+
+    # Check for "OPTION X IS CORRECT"
+    option_correct_match = re.search(r"OPTION\s+([A-D])\s+IS\s+CORRECT", generated_answer, re.IGNORECASE)
+    if option_correct_match:
+        return option_correct_match.group(1).upper()
+
+    # Check for "Answer: X" where X is a letter
+    answer_letter_match = re.search(r"Answer:\s*([A-D])", generated_answer, re.IGNORECASE)
+    if answer_letter_match:
+        return answer_letter_match.group(1).upper()
     
-    for line in lines:
-        if re.match(r'^Options?:', line, re.IGNORECASE):
-            options_section = True
-            continue
-        if options_section:
-            option_match = re.match(r'^([A-D])\.\s*(.+)', line.strip(), re.IGNORECASE)
-            if option_match:
-                letter = option_match.group(1).upper()
-                text = option_match.group(2).strip().lower()
-                option_map[text] = letter
-            else:
-                # If the line doesn't match an option, end the options section
-                options_section = False
+    # Check for "The answer is choice X" where X is a letter
+    choice_match = re.search(r"The answer is choice\s*([A-D])", generated_answer, re.IGNORECASE)
+    if choice_match:
+        return choice_match.group(1).upper()
     
-    # Look for "OPTION X IS CORRECT" or "ANSWER IS X"
-    match = re.search(r"OPTION\s+([A-D])\s+IS\s+CORRECT", generated_answer, re.IGNORECASE)
-    if match:
-        return match.group(1).upper()  # Return the extracted option (A, B, C, or D)
+    # Check for "The answer is choice X" where X is a letter
+    choice_match = re.search(r"answer is\s*([A-D])", generated_answer, re.IGNORECASE)
+    if choice_match:
+        return choice_match.group(1).upper()
     
-    # As a fallback, look for "ANSWER IS X"
-    match = re.search(r"ANSWER\s+IS\s+([A-D])", generated_answer, re.IGNORECASE)
-    if match:
-        return match.group(1).upper()
-    
-    # Look for "Answer: X" where X is a letter
-    match = re.search(r"Answer:\s*([A-D])", generated_answer, re.IGNORECASE)
-    if match:
-        return match.group(1).upper()
-    
-    # Look for "Answer: [Option Text]"
-    match = re.search(r"Answer:\s*([A-Da-d])", generated_answer, re.IGNORECASE)
-    if match:
-        # This handles cases like "Answer: A"
-        return match.group(1).upper()
-    match = re.search(r"Answer:\s*(.+)", generated_answer, re.IGNORECASE)
-    if match:
-        answer_text = match.group(1).strip().lower()
-        return word_to_option.get(answer_text, None)
-    # Check for "The output: [answer]"
-    match = re.search(r"The output:\s*(yes|no|maybe)", generated_answer, re.IGNORECASE)
-    if match:
-        answer_text = match.group(1).strip().lower()
-        return word_to_option.get(answer_text, None)
-    # Check for ". [answer]"
-    match = re.search(r".\s*(yes|no|maybe)", generated_answer, re.IGNORECASE)
-    if match:
-        answer_text = match.group(1).strip().lower()
-        return word_to_option.get(answer_text, None)
-    # Look for patterns like "the answer is yes/no/maybe"
-    match = re.search(r"The answer is\s*(yes|no|maybe)", generated_answer, re.IGNORECASE)
-    if match:
-        answer_text = match.group(1).strip().lower()
-        return word_to_option.get(answer_text, None)  # Map "yes", "no", "maybe" to A, B, C
-    # Look for implicit answers that start with "Yes", "No", or "Maybe"
-    for line in lines:
-        line = line.strip().lower()
-        if line.startswith(": yes,"):
-            return "A"
-        elif line.startswith(": no,"):
-            return "B"
-        elif line.startswith(": maybe,"):
-            return "C"
-    else:
-        # Attempt to extract the answer text and map it to the corresponding option letter
-        answer_text_match = re.search(r"Answer:\s*(.+)", generated_answer, re.IGNORECASE)
-        if answer_text_match:
-            answer_text = answer_text_match.group(1).strip().lower()
-            return option_map.get(answer_text, None)
-    
-    return None  # If no valid option is found, return None
+    # Check for "The answer is choice X" where X is a letter
+    choice_match = re.search(r"The answer is option\s*([A-D])", generated_answer, re.IGNORECASE)
+    if choice_match:
+        return choice_match.group(1).upper()
+
+    # Extract 'yes', 'no', or 'maybe' from the text, taking the last occurrence
+    matches = re.findall(r"\b(yes|no|maybe)\b", generated_answer, re.IGNORECASE)
+    if matches:
+        last_answer_text = matches[-1].strip().lower()
+        return word_to_option.get(last_answer_text)
+
+    return None  # Return None if no valid option is found
 
 # Iterate over each question and get the generated answer
 for question_id, question_data in all_questions:
