@@ -1,14 +1,19 @@
 import os
+import re
 import json
 import torch
 import transformers
 from transformers import AutoTokenizer
+from template import *
 
 class MedRAG:
     def __init__(self, llm_name="axiong/PMC_LLaMA_13B", rag=True, cache_dir=None):
         self.llm_name = llm_name
         self.rag = rag
         self.cache_dir = cache_dir
+        
+        self.templates = {"cot_system": general_cot_system, "cot_prompt": general_cot,
+                    "medrag_system": general_medrag_system, "medrag_prompt": general_medrag}
 
         # Load the tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -47,52 +52,55 @@ class MedRAG:
             max_length=self.max_length
         )
 
-        # Generate text
-        with torch.no_grad():
-            generated_ids = self.model.generate(
-                inputs['input_ids'],
-                max_length=self.max_length,  # Reduce length for faster responses
-                do_sample=True,
-                top_k=50,
-                temperature=0.7,
-                pad_token_id=self.model.config.pad_token_id
-            )
+        if self.llm_name == "Henrychur/MMed-Llama-3-8B":
+            # Move inputs to the correct device
+            inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+
+            # Generate text
+            with torch.no_grad():
+                generated_ids = self.model.generate(
+                    inputs['input_ids'],
+                    attention_mask=inputs['attention_mask'],  # Explicitly set attention mask
+                    max_length=self.max_length,  # Reduce length for faster responses
+                    do_sample=True,
+                    top_k=50,
+                    temperature=0.7,
+                    pad_token_id=self.model.config.pad_token_id
+                )
+        elif self.llm_name == "axiong/PMC_LLaMA_13B":
+            # No need to move inputs to the device manually with device_map="auto"
+            with torch.no_grad():
+                generated_ids = self.model.generate(
+                    inputs['input_ids'],
+                    max_length=self.max_length,  # Reduce length for faster responses
+                    do_sample=True,
+                    top_k=50,
+                    temperature=0.7,
+                    pad_token_id=self.model.config.pad_token_id
+                )
 
         return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
 
     def medrag_answer(self, question, options=None, save_dir=None):
-        # Chain of Thoughts Configuration
-        gpt_chain_of_thoughts = {
-            "prompt_name": "gpt_chain_of_thoughts",
-            "response_type": "MC",
-            "prompt": question,
-            "examples": [
-                {
-                    "question": question,
-                    "answer": options
-                }
-            ]
-        }
-        
-        if options:
-            # Ensure options are sorted by key (e.g., A, B, C, D)
-            sorted_keys = sorted(options.keys())
-            options_text = '\n'.join([f"{key}. {options[key]}" for key in sorted_keys])
+        if options is not None:
+            options = '\n'.join([key+". "+options[key] for key in sorted(options.keys())])
         else:
-            options_text = ''
-        
-        # Construct the prompt
-        prompt = f"Question: {question}\nOptions:\n{options_text}\nAnswer:"
-        
-        # Generate the answer
-        answer = self.generate(prompt).strip()
+            options = ''
+        prompt_cot = self.templates["cot_prompt"].render(question=question, options=options)
+        messages = [
+            {"role": "system", "content": self.templates["cot_system"]},
+            {"role": "user", "content": prompt_cot}
+        ]
+        answers = []
+        ans = self.generate(messages)
+        answers.append(re.sub("\s+", " ", ans))
 
         # Optionally save the result
         if save_dir:
             os.makedirs(save_dir, exist_ok=True)
             response_path = os.path.join(save_dir, "response.json")
             with open(response_path, 'w') as f:
-                json.dump({"answer": answer, "gpt_chain_of_thoughts": gpt_chain_of_thoughts}, f, indent=4)
+                json.dump({"answer": answers}, f, indent=4)
             print(f"Response saved to {response_path}")
 
-        return answer
+        return answers[0] if len(answers)==1 else answers
