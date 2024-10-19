@@ -4,6 +4,8 @@ import json
 import torch
 import transformers
 from transformers import AutoTokenizer
+import sys
+sys.path.append("src")
 from template import *
 
 class MedRAG:
