@@ -5,7 +5,7 @@ import transformers
 from transformers import AutoTokenizer
 
 class MedRAG:
-    def __init__(self, llm_name="Henrychur/MMed-Llama-3-8B", rag=True, cache_dir=None):
+    def __init__(self, llm_name="axiong/PMC_LLaMA_13B", rag=True, cache_dir=None):
         self.llm_name = llm_name
         self.rag = rag
         self.cache_dir = cache_dir
@@ -14,7 +14,7 @@ class MedRAG:
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.llm_name,
             cache_dir=self.cache_dir,
-            legacy=False  # Switch to new behavior
+            legacy=False
         )
 
         # Load the model using bf16 for optimized memory usage
@@ -22,7 +22,7 @@ class MedRAG:
             self.llm_name, 
             cache_dir=self.cache_dir, 
             torch_dtype=torch.bfloat16,
-            device_map="auto"  # Automatically split across available devices
+            device_map="auto"
         )
 
         # Set max length to a smaller value for faster inference
@@ -39,17 +39,10 @@ class MedRAG:
             print("Tokenizer has no pad token, setting pad token to eos_token.")
             self.tokenizer.pad_token = self.tokenizer.eos_token
         
-        # Configure pad token settings
-        self._set_pad_token()
-
         # Print confirmation that the model has been loaded on devices
         print(f"Model automatically loaded on appropriate devices using `device_map`.")
 
     def _set_pad_token(self):
-        """
-        Ensures that the tokenizer and model have a valid pad_token_id.
-        If the tokenizer lacks a pad token, one is added.
-        """
         # Check if tokenizer has a pad token
         if self.tokenizer.pad_token is None:
             # Add a pad token
@@ -71,7 +64,7 @@ class MedRAG:
             raise ValueError(f"Invalid pad_token_id: {self.model.config.pad_token_id}. It should be a positive integer.")
         else:
             print("pad_token_id is valid and positive.")
-        
+            
         # Check if pad_token_id is the same as eos_token_id
         if self.tokenizer.pad_token_id == self.tokenizer.eos_token_id:
             print("Warning: `pad_token_id` is set to the same value as `eos_token_id`. Consider setting a distinct pad token.")
@@ -92,20 +85,32 @@ class MedRAG:
             max_length=self.max_length
         )
 
-        # Move inputs to the correct device
-        inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+        if self.llm_name == "Henrychur/MMed-Llama-3-8B":
+            # Move inputs to the correct device
+            inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
 
-        # Generate text
-        with torch.no_grad():
-            generated_ids = self.model.generate(
-                inputs['input_ids'],
-                attention_mask=inputs['attention_mask'],  # Explicitly set attention mask
-                max_length=self.max_length,  # Reduce length for faster responses
-                do_sample=True,
-                top_k=50,
-                temperature=0.7,
-                pad_token_id=self.model.config.pad_token_id
-            )
+            # Generate text
+            with torch.no_grad():
+                generated_ids = self.model.generate(
+                    inputs['input_ids'],
+                    attention_mask=inputs['attention_mask'],  # Explicitly set attention mask
+                    max_length=self.max_length,  # Reduce length for faster responses
+                    do_sample=True,
+                    top_k=50,
+                    temperature=0.7,
+                    pad_token_id=self.model.config.pad_token_id
+                )
+        elif self.llm_name == "axiong/PMC_LLaMA_13B":
+            # No need to move inputs to the device manually with device_map="auto"
+            with torch.no_grad():
+                generated_ids = self.model.generate(
+                    inputs['input_ids'],
+                    max_length=self.max_length,  # Reduce length for faster responses
+                    do_sample=True,
+                    top_k=50,
+                    temperature=0.7,
+                    pad_token_id=self.model.config.pad_token_id
+                )
 
         return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
 
