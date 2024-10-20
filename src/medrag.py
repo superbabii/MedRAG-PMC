@@ -199,6 +199,8 @@ def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
     messages.append({"role": "user", "content": create_query(question)})
     return messages 
 
+import re
+
 class MedRAG:
     def __init__(self, llm_name="axiong/PMC_LLaMA_13B", rag=True, cache_dir=None):
         self.llm_name = llm_name
@@ -265,14 +267,14 @@ class MedRAG:
             return "Generation failed."
 
     def _filter_output(self, raw_output):
-        # Remove prompt instructions and unnecessary content from the generated output
-        # Start from the first occurrence of "## Answer" to get the relevant content
+        # Start from the first occurrence of "## Answer" and filter out placeholder text
         start_index = raw_output.find("## Answer")
         if start_index != -1:
             filtered_output = raw_output[start_index:].strip()
-            # Further clean up by removing any repeated prompt text or irrelevant sections
-            filtered_output = re.sub(r"Generated Answer.*## Answer", "## Answer", filtered_output, flags=re.DOTALL)
-            return filtered_output
+            # Remove placeholder instructions like "(Provide a detailed chain of thought explanation)"
+            filtered_output = re.sub(r"\(Provide a detailed chain of thought explanation\)", "", filtered_output)
+            filtered_output = re.sub(r"Therefore, the answer is \[final model answer \(e\.g\., A, B, C, or D\)\]\.", "", filtered_output)
+            return filtered_output.strip()
         else:
             # If "## Answer" is not found, return the original output
             return raw_output
