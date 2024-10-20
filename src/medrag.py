@@ -144,10 +144,13 @@ import torch
 import transformers
 from transformers import AutoTokenizer
 
-system_prompt = """You are an expert medical professional. You are provided with a medical question with multiple answer choices.
-Your goal is to think through the question carefully and explain your reasoning step by step before selecting the final answer.
-Respond only with the reasoning steps and answer as specified below.
-Below is the format for each question and answer:
+# Refined system prompt with explicit instructions for reasoning
+system_prompt = """You are a highly knowledgeable medical professional. 
+For each medical question with multiple-choice answers, think through each option carefully.
+Explain the reasoning step by step, considering why each choice is correct or incorrect.
+Conclude with a final answer and specify the corresponding letter choice.
+
+Follow this format:
 
 Input:
 ## Question: {{question}}
@@ -155,11 +158,13 @@ Input:
 
 Output:
 ## Answer
-(model generated chain of thought explanation)
-Therefore, the answer is [final model answer (e.g. A,B,C,D)]"""
+(Provide a detailed chain of thought explanation)
+Therefore, the answer is [final model answer (e.g., A, B, C, or D)]."""
 
 def create_query(item):
-    query = f"""## Question {item["question"]}
+    # Enhanced query format with additional context
+    query = f"""## Question: Given the following medical scenario, analyze each option carefully:
+{item["question"]}
 A. {item["options"]["A"]}
 B. {item["options"]["B"]}
 C. {item["options"]["C"]}
@@ -167,30 +172,32 @@ D. {item["options"]["D"]}"""
     return query
 
 def format_answer(cot, answer):
+    # Formats the output as specified in the system prompt
     return f"""## Answer
 {cot}
 Therefore, the answer is {answer}"""
 
 def build_zero_shot_prompt(system_prompt, question):
+    # Builds a zero-shot prompt with only the system instructions and the current question
     messages = [{"role": "system", "content": system_prompt},
                 {"role": "user", "content": create_query(question)}]
     return messages
 
 def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
-
+    # Builds a few-shot prompt with examples for more effective learning
     messages = [{"role": "system", "content": system_prompt}]
     
     for elem in examples:
         messages.append({"role": "user", "content": create_query(elem)})
         if include_cot:
-            messages.append({"role": "assistant", "content": format_answer(elem["cot"], elem["answer_idx"])})        
-        else:           
+            messages.append({"role": "assistant", "content": format_answer(elem["cot"], elem["answer_idx"])})
+        else:
             answer_string = f"""## Answer\nTherefore, the answer is {elem["answer_idx"]}"""
             messages.append({"role": "assistant", "content": answer_string})
-            
+    
     messages.append({"role": "user", "content": create_query(question)})
     return messages 
-    
+
 class MedRAG:
     def __init__(self, llm_name="axiong/PMC_LLaMA_13B", rag=True, cache_dir=None):
         self.llm_name = llm_name
@@ -204,7 +211,7 @@ class MedRAG:
             legacy=False
         )
 
-        # Load the model using bf16 for optimized memory usage
+        # Load the model with optimized memory usage using bf16
         self.model = transformers.LlamaForCausalLM.from_pretrained(
             self.llm_name, 
             cache_dir=self.cache_dir, 
@@ -212,47 +219,52 @@ class MedRAG:
             device_map="auto"
         )
 
-        # Set max length to a smaller value for faster inference
+        # Set max length for inputs to avoid excessively long prompts
         self.max_length = 2048
         
-        # Ensure the tokenizer has a pad token if it doesn't already
+        # Ensure the tokenizer has a pad token, otherwise set it to eos_token
         if self.tokenizer.pad_token is None:
             print("Tokenizer has no pad token, setting pad token to eos_token.")
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
     def generate(self, prompt):
-        # Convert the list of dictionaries (messages) to a single string
+        # Convert list of messages to a single prompt string
         if isinstance(prompt, list):
             prompt = ' '.join([msg['content'] for msg in prompt if 'content' in msg])
-            
-        # Simplified text generation
+        
+        # Tokenize the input prompt
         inputs = self.tokenizer(
             prompt,
             return_tensors="pt",
-            add_special_tokens=False,
-            padding=True,  # Enable padding if batching
-            truncation=True,  # Truncate to handle long prompts
+            padding=True,  # Enable padding
+            truncation=True,  # Truncate if too long
             max_length=self.max_length
-        )
+        ).to(self.model.device)
 
-        with torch.no_grad():
-            generated_ids = self.model.generate(
-                inputs['input_ids'],
-                max_length=self.max_length,  # Reduce length for faster responses
-                do_sample=True,
-                top_k=50,
-                temperature=0.7,
-                pad_token_id=self.model.config.pad_token_id
-            )
+        # Generate the response
+        try:
+            with torch.no_grad():
+                generated_ids = self.model.generate(
+                    inputs['input_ids'],
+                    max_length=self.max_length,  # Limit response length
+                    do_sample=True,
+                    top_k=50,
+                    temperature=0.7,
+                    pad_token_id=self.tokenizer.pad_token_id
+                )
 
-        return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+            # Decode the generated response
+            return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True).strip()
+        except Exception as e:
+            print(f"Error during generation: {e}")
+            return "Generation failed."
 
     def medrag_answer(self, question, save_dir=None):
-
+        # Build the prompt for zero-shot learning
         prompt = build_zero_shot_prompt(system_prompt, question)
         
         # Generate the answer
-        answer = self.generate(prompt).strip()
+        answer = self.generate(prompt)
 
         # Optionally save the result
         if save_dir:
