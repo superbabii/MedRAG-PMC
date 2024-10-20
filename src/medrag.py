@@ -224,6 +224,10 @@ class MedRAG:
         print(f"Model automatically loaded on appropriate devices using `device_map`.")
 
     def generate(self, prompt):
+        # Convert the list of dictionaries (messages) to a single string
+        if isinstance(prompt, list):
+            prompt = ' '.join([msg['content'] for msg in prompt if 'content' in msg])
+            
         # Simplified text generation
         inputs = self.tokenizer(
             prompt,
