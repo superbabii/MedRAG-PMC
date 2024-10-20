@@ -219,9 +219,6 @@ class MedRAG:
         if self.tokenizer.pad_token is None:
             print("Tokenizer has no pad token, setting pad token to eos_token.")
             self.tokenizer.pad_token = self.tokenizer.eos_token
-        
-        # Print confirmation that the model has been loaded on devices
-        print(f"Model automatically loaded on appropriate devices using `device_map`.")
 
     def generate(self, prompt):
         # Convert the list of dictionaries (messages) to a single string
@@ -251,13 +248,7 @@ class MedRAG:
         return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
 
     def medrag_answer(self, question, save_dir=None):
-        # if options:
-        #     # Ensure options are sorted by key (e.g., A, B, C, D)
-        #     sorted_keys = sorted(options.keys())
-        #     options_text = '\n'.join([f"{key}. {options[key]}" for key in sorted_keys])
-        # else:
-        #     options_text = ''
-        # prompt = f"Question: {question}\nOptions:\n{options_text}\nAnswer:"
+
         prompt = build_zero_shot_prompt(system_prompt, question)
         
         # Generate the answer
@@ -272,4 +263,3 @@ class MedRAG:
             print(f"Response saved to {response_path}")
 
         return answer
-
