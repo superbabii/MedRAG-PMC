@@ -254,10 +254,23 @@ class MedRAG:
                 )
 
             # Decode the generated response
-            return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True).strip()
+            raw_output = self.tokenizer.decode(generated_ids[0], skip_special_tokens=True).strip()
+            
+            # Post-process the output to ensure it matches the specified format
+            processed_output = self._format_generated_answer(raw_output)
+            return processed_output
         except Exception as e:
             print(f"Error during generation: {e}")
             return "Generation failed."
+
+    def _format_generated_answer(self, raw_output):
+        # Extract the answer and reasoning, and ensure the output format is consistent
+        match = re.search(r"(## Answer.*Therefore, the answer is [A-D])", raw_output, re.DOTALL)
+        if match:
+            return match.group(1).strip()
+        else:
+            # If the generated output does not match the expected pattern, return the original
+            return raw_output
 
     def medrag_answer(self, question, save_dir=None):
         # Build the prompt for zero-shot learning
