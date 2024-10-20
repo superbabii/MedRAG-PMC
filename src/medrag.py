@@ -266,9 +266,13 @@ class MedRAG:
 
     def _filter_output(self, raw_output):
         # Remove prompt instructions and unnecessary content from the generated output
+        # Start from the first occurrence of "## Answer" to get the relevant content
         start_index = raw_output.find("## Answer")
         if start_index != -1:
-            return raw_output[start_index:].strip()
+            filtered_output = raw_output[start_index:].strip()
+            # Further clean up by removing any repeated prompt text or irrelevant sections
+            filtered_output = re.sub(r"Generated Answer.*## Answer", "## Answer", filtered_output, flags=re.DOTALL)
+            return filtered_output
         else:
             # If "## Answer" is not found, return the original output
             return raw_output
