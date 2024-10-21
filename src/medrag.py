@@ -213,6 +213,15 @@ def shuffle_option_labels(answer_options):
     
     return shuffled_options_dict
 
+def extract_answer_choice(generated_answer, max_option="D"):
+    # Limit the regex pattern to valid choices only (A to max_option, e.g., A-D)
+    pattern = rf"OPTION ([A-{max_option}]) IS CORRECT"
+    match = re.search(pattern, generated_answer, re.IGNORECASE)
+    if match:
+        return match.group(1).upper()  # Return the matched letter (A, B, C, or D)
+    return None
+
+
 class MedRAG:
     def __init__(self, llm_name="axiong/PMC_LLaMA_13B", rag=True, cache_dir=None):
         self.llm_name = llm_name
@@ -308,37 +317,28 @@ class MedRAG:
         shuffle_results = []
 
         for _ in range(num_shuffles):
-            # Shuffle options if enabled
             shuffled_options = shuffle_option_labels(question["options"]) if shuffle else question["options"]
             
-            # Build the prompt for zero-shot learning using shuffled options
+            # Generate the prompt with the shuffled options
             prompt = build_zero_shot_prompt(system_prompt, {"question": question["question"], "options": shuffled_options})
-            answer = self.generate(prompt)
+            raw_answer = self.generate(prompt)
 
-            # Find the option letter directly from the raw answer
-            option_match = re.search(r"OPTION ([A-D]) IS CORRECT", answer, re.IGNORECASE)
-            mapped_answer = shuffled_options[option_match.group(1)] if option_match else "Unknown"
-            
-            # Record the mapped answer
+            # Extract the answer choice, ensuring it's within the valid range (A-D)
+            extracted_choice = extract_answer_choice(raw_answer, max_option="D")
+
+            if extracted_choice and extracted_choice in shuffled_options:
+                # Map back to the original shuffled answer text
+                mapped_answer = shuffled_options[extracted_choice]
+            else:
+                mapped_answer = "Unknown"  # Set to unknown if extraction failed or out of range
+
+            # Tally the result and keep track of each shuffle's details
             answer_counts[mapped_answer] += 1
-            shuffle_results.append((shuffled_options, mapped_answer, answer))
+            shuffle_results.append((shuffled_options, mapped_answer, raw_answer))
 
-        # Select the most consistent answer (highest frequency)
+        # Select the most consistent answer
         most_consistent_answer, frequency = answer_counts.most_common(1)[0]
-
-        # Optionally save the result
-        # if save_dir:
-        #     os.makedirs(save_dir, exist_ok=True)
-        #     response_path = os.path.join(save_dir, "response.json")
-        #     with open(response_path, 'w') as f:
-        #         json.dump({
-        #             "final_answer": most_consistent_answer,
-        #             "frequency": frequency,
-        #             "details": shuffle_results
-        #         }, f, indent=4)
-        #     print(f"Response saved to {response_path}")
-
-        # Return the final answer and frequency details
+        
         return {
             "final_answer": most_consistent_answer,
             "frequency": frequency,
