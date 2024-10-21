@@ -111,6 +111,7 @@ for question_id, question_data in all_questions:
             print(f"Raw Answer: {raw_answer}")
             print('-' * 30)
         
+        print(f"Final_answer: {final_answer}")
         # Extract the generated answer choice
         generated_choice = extract_answer_choice(final_answer)
 
