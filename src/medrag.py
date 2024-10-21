@@ -301,18 +301,6 @@ class MedRAG:
             return raw_output
 
     def medrag_answer(self, question, save_dir=None, shuffle=True, num_shuffles=5):
-        """
-        Generates answers for multiple shuffled versions of the question and selects the most consistent one.
-        
-        Args:
-            question (dict): The question and options in the format {"question": str, "options": dict}.
-            save_dir (str, optional): Directory to save the output.
-            shuffle (bool, optional): Whether to shuffle the options. Defaults to True.
-            num_shuffles (int, optional): Number of times to shuffle the options and generate answers.
-            
-        Returns:
-            dict: Final answer with details on the most consistent answer and frequency.
-        """
         answer_counts = Counter()
         shuffle_results = []
 
@@ -333,14 +321,16 @@ class MedRAG:
                 mapped_answer = "Unknown"  # Set to unknown if extraction failed or out of range
 
             # Tally the result and keep track of each shuffle's details
-            answer_counts[mapped_answer] += 1
-            shuffle_results.append((shuffled_options, mapped_answer, raw_answer))
+            answer_counts[extracted_choice] += 1
+            shuffle_results.append((shuffled_options, extracted_choice, raw_answer))
 
-        # Select the most consistent answer
+        # Select the most consistent answer (one of A, B, C, or D)
         most_consistent_answer, frequency = answer_counts.most_common(1)[0]
         
+        # Return the final consistent answer as the original option letter
         return {
-            "final_answer": most_consistent_answer,
+            "final_answer": most_consistent_answer,  # Return the letter A, B, C, or D
             "frequency": frequency,
             "details": shuffle_results
         }
+
