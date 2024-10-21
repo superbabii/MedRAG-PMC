@@ -103,24 +103,24 @@ for question_id, question_data in all_questions:
         details = result["details"]
 
         # Print detailed debug information
-        print(f"Details of generated answers for question ID: {question_id}")
-        for i, (shuffled_options, mapped_answer, raw_answer) in enumerate(details):
-            print(f"Shuffle {i + 1}:")
-            print(f"Shuffled Options: {shuffled_options}")
-            print(f"Mapped Answer: {mapped_answer}")
-            print(f"Raw Answer: {raw_answer}")
-            print('-' * 30)
+        # print(f"Details of generated answers for question ID: {question_id}")
+        # for i, (shuffled_options, mapped_answer, raw_answer) in enumerate(details):
+        #     print(f"Shuffle {i + 1}:")
+        #     print(f"Shuffled Options: {shuffled_options}")
+        #     print(f"Mapped Answer: {mapped_answer}")
+        #     print(f"Raw Answer: {raw_answer}")
+        #     print('-' * 30)
         
-        print(f"Final_answer: {final_answer}")
+        # print(f"Final_answer: {final_answer}")
         # Extract the generated answer choice
-        generated_choice = extract_answer_choice(final_answer)
+        # generated_choice = extract_answer_choice(final_answer)
 
-        if not generated_choice:
+        if not final_answer:
             print(f"No valid answer choice extracted for question ID: {question_id}")
             continue
 
         # Compare the generated answer with the correct one
-        is_correct = correct_answer == generated_choice
+        is_correct = correct_answer == final_answer
         if is_correct:
             correct_count += 1
         
