@@ -255,16 +255,20 @@ def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
     # Builds a few-shot prompt with examples for more effective learning
     messages = [{"role": "system", "content": system_prompt}]
     
-    for elem in examples:
+    # Iterate over the examples (which are dictionaries of question data)
+    for elem in examples.items():  # Updated to unpack the dictionary properly
         messages.append({"role": "user", "content": create_query(elem)})
         if include_cot:
-            messages.append({"role": "assistant", "content": format_answer(elem["cot"], elem["answer"])})
+            cot = elem.get("cot", "")  # Use .get() to safely handle cases where "cot" might be missing
+            messages.append({"role": "assistant", "content": format_answer(cot, elem["answer"])})
         else:
             answer_string = f"""## Answer\nTherefore, the answer is {elem["answer"]}"""
             messages.append({"role": "assistant", "content": answer_string})
     
+    # Add the actual question to be answered
     messages.append({"role": "user", "content": create_query(question)})
-    return messages 
+    return messages
+
 
 def shuffle_option_labels(answer_options):
     options = list(answer_options.items())
