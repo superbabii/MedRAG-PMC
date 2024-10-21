@@ -323,12 +323,23 @@ class MedRAG:
                 # If the answer is not valid, log as "Unknown"
                 shuffle_results.append((shuffled_options, "Unknown", raw_answer))
 
-        # Determine the most consistent answer
-        most_common_answer, frequency = answer_counts.most_common(1)[0] if answer_counts else ("Unknown", 0)
+        # Determine the most common answers
+        most_common_answers = answer_counts.most_common()
+        highest_frequency = most_common_answers[0][1] if most_common_answers else 0
+
+        # Find all answers with the highest frequency
+        tied_answers = [answer for answer, freq in most_common_answers if freq == highest_frequency]
+
+        # If there's a tie, prioritize based on original order (A, B, C, D)
+        if len(tied_answers) > 1:
+            # Sort tied answers based on their original order in question_data["options"]
+            most_common_answer = min(tied_answers, key=lambda x: list(question_data["options"].keys()).index(x))
+        else:
+            most_common_answer = tied_answers[0] if tied_answers else "Unknown"
 
         return {
             "final_answer": most_common_answer,  # This will now be one of 'A', 'B', 'C', or 'D'
-            "frequency": frequency,
+            "frequency": highest_frequency,
             "details": shuffle_results
         }
 
