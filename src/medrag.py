@@ -246,7 +246,7 @@ class MedRAG:
             print("Tokenizer has no pad token, setting pad token to eos_token.")
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-    def generate(self, prompt):
+    def generate(self, prompt, temperature=0.7):
         # Convert list of messages to a single prompt string
         if isinstance(prompt, list):
             prompt = ' '.join([msg['content'] for msg in prompt if 'content' in msg])
@@ -268,7 +268,7 @@ class MedRAG:
                     max_length=self.max_length,  # Limit response length
                     do_sample=True,
                     top_k=50,
-                    temperature=0.7,
+                    temperature=temperature,
                     pad_token_id=self.tokenizer.pad_token_id
                 )
 
