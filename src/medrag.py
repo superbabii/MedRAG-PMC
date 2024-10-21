@@ -329,7 +329,7 @@ class MedRAG:
 
         return most_common_answer
 
-    def _extract_final_answer(response):
+    def _extract_final_answer(self, response):
         # First, ensure response is a valid string
         if not isinstance(response, str):
             print("Error: response is not a valid string.")
