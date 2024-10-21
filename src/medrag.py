@@ -149,9 +149,10 @@ from collections import Counter
 
 # Refined system prompt with explicit instructions for reasoning
 system_prompt = """You are a highly knowledgeable medical professional. 
-For each medical question with multiple-choice answers, think through each option carefully.
-Explain the reasoning step by step, considering why each choice is correct or incorrect.
-Conclude with a final answer and specify the corresponding letter choice.
+For each medical question with multiple-choice answers, carefully consider each option and think through it step by step.
+- For each choice, explain why it could be correct or incorrect, including any relevant medical knowledge.
+- Double-check your reasoning for consistency and accuracy before deciding.
+- Clearly state your final answer and specify the corresponding letter choice.
 
 Input:
 ## Question: {{question}}
@@ -159,20 +160,8 @@ Input:
 
 Output:
 ## Answer
-(Provide a detailed chain of thought explanation)
+(Provide a detailed chain of thought explanation, checking each option thoroughly)
 Therefore, the answer is [final model answer (e.g., A, B, C, or D)]."""
-
-system_zero_shot_prompt = """You are an expert medical professional. You are provided with a medical question with multiple answer choices.
-Your goal is to think through the question carefully and respond directly with the answer option.
-Below is the format for each question and answer:
-
-Input:
-## Question: {{question}}
-{{answer_choices}}
-
-Output:
-## Answer
-Therefore, the answer is [final model answer (e.g. A,B,C,D)]"""
 
 def create_query(item, shuffled_options=None):
     # Use shuffled options if provided, otherwise fall back to original options
@@ -221,7 +210,6 @@ def shuffle_option_labels(answer_options):
     shuffled_options_dict = {label: option_text for label, (original_label, option_text) in zip(labels, options)}
     original_mapping = {label: original_label for label, (original_label, _) in zip(labels, options)}
     return shuffled_options_dict, original_mapping
-
 
 def extract_answer_choice(generated_answer, valid_choices=("A", "B", "C", "D")):
     # Only consider options within the valid range (A-D)
@@ -284,7 +272,7 @@ class MedRAG:
                     max_length=self.max_length,  # Limit response length
                     do_sample=True,
                     top_k=50,
-                    temperature=0.7,
+                    temperature=0.3,
                     pad_token_id=self.tokenizer.pad_token_id
                 )
 
@@ -311,16 +299,16 @@ class MedRAG:
             # If "## Answer" is not found, return the original output
             return raw_output
 
-    def medrag_answer(self, question, save_dir=None, shuffle=True, num_shuffles=5):
+    def medrag_answer(self, question_data, save_dir=None, shuffle=True, num_shuffles=5):
         answer_counts = Counter()
         shuffle_results = []
 
         for _ in range(num_shuffles):
             # Shuffle options and get the mapping to original labels
-            shuffled_options, original_mapping = shuffle_option_labels(question["options"]) if shuffle else (question["options"], {label: label for label in question["options"]})
+            shuffled_options, original_mapping = shuffle_option_labels(question_data["options"]) if shuffle else (question_data["options"], {label: label for label in question_data["options"]})
             
             # Generate the prompt with the shuffled options
-            prompt = build_zero_shot_prompt(system_prompt, {"question": question["question"], "options": shuffled_options})
+            prompt = build_zero_shot_prompt(system_prompt, {"question": question_data["question"], "options": shuffled_options})
             raw_answer = self.generate(prompt)
 
             # Extract the option letter from the raw answer
