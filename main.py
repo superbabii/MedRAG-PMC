@@ -100,8 +100,16 @@ for question_id, question_data in all_questions:
         # Get the final consistent answer
         final_answer = result["final_answer"]
         frequency = result["frequency"]
-        
-        print(f"Generated Answer (Raw): {final_answer}")
+        details = result["details"]
+
+        # Print detailed debug information
+        print(f"Details of generated answers for question ID: {question_id}")
+        for i, (shuffled_options, mapped_answer, raw_answer) in enumerate(details):
+            print(f"Shuffle {i + 1}:")
+            print(f"Shuffled Options: {shuffled_options}")
+            print(f"Mapped Answer: {mapped_answer}")
+            print(f"Raw Answer: {raw_answer}")
+            print('-' * 30)
         
         # Extract the generated answer choice
         generated_choice = extract_answer_choice(final_answer)
