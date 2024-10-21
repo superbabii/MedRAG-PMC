@@ -329,10 +329,21 @@ class MedRAG:
 
         return most_common_answer
 
-    def _extract_final_answer(self, response):
-        # This function extracts the letter choice from the generated answer text
-        match = re.search(r'Therefore, the answer is ([A-D])', response)
-        return match.group(1) if match else None
+    def _extract_final_answer(response):
+        # First, ensure response is a valid string
+        if not isinstance(response, str):
+            print("Error: response is not a valid string.")
+            return None
+        
+        # Adjust the regex pattern to match the format of the generated response
+        # Assuming the format is: "Therefore, the answer is A" or similar
+        match = re.search(r'Therefore, the answer is\s+([A-D])', response, re.IGNORECASE)
+        
+        if match:
+            return match.group(1)
+        else:
+            print("Warning: Could not extract the answer from the response.")
+            return None
 
     def _map_answer_to_original(self, shuffled_keys, answer, original_keys):
         # Map the answer (based on shuffled choices) back to the original order (A, B, C, D)
