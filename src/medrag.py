@@ -145,6 +145,7 @@ import random
 import torch
 import transformers
 from transformers import AutoTokenizer
+from collections import Counter
 
 # Refined system prompt with explicit instructions for reasoning
 system_prompt = """You are a highly knowledgeable medical professional. 
@@ -163,15 +164,30 @@ Output:
 (Provide a detailed chain of thought explanation)
 Therefore, the answer is [final model answer (e.g., A, B, C, or D)]."""
 
-def create_query(item):
+def create_query(item, shuffle=False):
     # Enhanced query format with additional context
-    query = f"""## Question: Given the following medical scenario, analyze each option carefully:
+    options = item["options"]
+    
+    # If shuffle is True, shuffle the order of the choices
+    if shuffle:
+        keys = list(options.keys())
+        random.shuffle(keys)
+        shuffled_options = {key: options[key] for key in keys}
+        shuffled_query = f"""## Question: Given the following medical scenario, analyze each option carefully:
 {item["question"]}
-A. {item["options"]["A"]}
-B. {item["options"]["B"]}
-C. {item["options"]["C"]}
-D. {item["options"]["D"]}"""
-    return query
+A. {shuffled_options["A"]}
+B. {shuffled_options["B"]}
+C. {shuffled_options["C"]}
+D. {shuffled_options["D"]}"""
+        return shuffled_query, keys
+    else:
+        query = f"""## Question: Given the following medical scenario, analyze each option carefully:
+{item["question"]}
+A. {options["A"]}
+B. {options["B"]}
+C. {options["C"]}
+D. {options["D"]}"""
+        return query, list(options.keys())
 
 def format_answer(cot, answer):
     # Formats the output as specified in the system prompt
@@ -179,10 +195,11 @@ def format_answer(cot, answer):
 {cot}
 Therefore, the answer is {answer}"""
 
-def build_zero_shot_prompt(system_prompt, question):
-    # Builds a zero-shot prompt with only the system instructions and the current question
+def build_zero_shot_prompt(system_prompt, question, shuffle=False):
+    # Builds a zero-shot prompt with optional choice shuffling
+    query, _ = create_query(question, shuffle)
     messages = [{"role": "system", "content": system_prompt},
-                {"role": "user", "content": create_query(question)}]
+                {"role": "user", "content": query}]
     return messages
 
 def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
@@ -190,26 +207,15 @@ def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
     messages = [{"role": "system", "content": system_prompt}]
     
     for elem in examples:
-        messages.append({"role": "user", "content": create_query(elem)})
+        messages.append({"role": "user", "content": create_query(elem)[0]})
         if include_cot:
             messages.append({"role": "assistant", "content": format_answer(elem["cot"], elem["answer_idx"])})
         else:
             answer_string = f"""## Answer\nTherefore, the answer is {elem["answer_idx"]}"""
             messages.append({"role": "assistant", "content": answer_string})
     
-    messages.append({"role": "user", "content": create_query(question)})
+    messages.append({"role": "user", "content": create_query(question)[0]})
     return messages 
-
-def shuffle_option_labels(answer_options):
-
-    options = list(answer_options.values())
-    random.shuffle(options)
-    labels = [chr(i) for i in range(ord('A'), ord('A') + len(options))]
-    shuffled_options_dict = {label: option for label, option in zip(labels, options)}
-    
-    return shuffled_options_dict
-
-import re
 
 class MedRAG:
     def __init__(self, llm_name="axiong/PMC_LLaMA_13B", rag=True, cache_dir=None):
@@ -289,19 +295,28 @@ class MedRAG:
             # If "## Answer" is not found, return the original output
             return raw_output
 
-    def medrag_answer(self, question, save_dir=None):
-        # Build the prompt for zero-shot learning
-        prompt = build_zero_shot_prompt(system_prompt, question)
+    def medrag_answer(self, question, save_dir=None, num_ensembles=5, temperatures=[0.7, 0.8, 0.9]):
+        # Collect the ensemble of answers
+        answers = []
         
-        # Generate the answer
-        answer = self.generate(prompt)
+        for _ in range(num_ensembles):
+            # Shuffle choices for diversity in each ensemble
+            prompt = build_zero_shot_prompt(system_prompt, question, shuffle=True)
+            # Randomly choose a temperature from the list
+            temperature = random.choice(temperatures)
+            # Generate an answer
+            answer = self.generate(prompt, temperature=temperature)
+            answers.append(answer)
+
+        # Identify the most consistent answer (majority vote)
+        most_common_answer = Counter(answers).most_common(1)[0][0]
 
         # Optionally save the result
         if save_dir:
             os.makedirs(save_dir, exist_ok=True)
             response_path = os.path.join(save_dir, "response.json")
             with open(response_path, 'w') as f:
-                json.dump({"answer": answer}, f, indent=4)
+                json.dump({"answer": most_common_answer, "all_answers": answers}, f, indent=4)
             print(f"Response saved to {response_path}")
 
-        return answer
+        return most_common_answer
