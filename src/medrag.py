@@ -141,6 +141,7 @@
 import os
 import re
 import json
+import random
 import torch
 import transformers
 from transformers import AutoTokenizer
@@ -198,6 +199,15 @@ def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
     
     messages.append({"role": "user", "content": create_query(question)})
     return messages 
+
+def shuffle_option_labels(answer_options):
+
+    options = list(answer_options.values())
+    random.shuffle(options)
+    labels = [chr(i) for i in range(ord('A'), ord('A') + len(options))]
+    shuffled_options_dict = {label: option for label, option in zip(labels, options)}
+    
+    return shuffled_options_dict
 
 import re
 
