@@ -205,22 +205,23 @@ def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
     return messages 
 
 def shuffle_option_labels(answer_options):
-
-    options = list(answer_options.values())
+    options = list(answer_options.items())
     random.shuffle(options)
     labels = [chr(i) for i in range(ord('A'), ord('A') + len(options))]
-    shuffled_options_dict = {label: option for label, option in zip(labels, options)}
-    
-    return shuffled_options_dict
+    shuffled_options_dict = {label: option_text for label, (original_label, option_text) in zip(labels, options)}
+    original_mapping = {label: original_label for label, (original_label, _) in zip(labels, options)}
+    return shuffled_options_dict, original_mapping
 
-def extract_answer_choice(generated_answer, max_option="D"):
-    # Limit the regex pattern to valid choices only (A to max_option, e.g., A-D)
-    pattern = rf"OPTION ([A-{max_option}]) IS CORRECT"
+
+def extract_answer_choice(generated_answer, valid_choices=("A", "B", "C", "D")):
+    # Only consider options within the valid range (A-D)
+    pattern = rf"OPTION ([{''.join(valid_choices)}]) IS CORRECT"
     match = re.search(pattern, generated_answer, re.IGNORECASE)
     if match:
-        return match.group(1).upper()  # Return the matched letter (A, B, C, or D)
-    return None
-
+        choice = match.group(1).upper()
+        if choice in valid_choices:
+            return choice
+    return None  # Return None if no valid choice is found
 
 class MedRAG:
     def __init__(self, llm_name="axiong/PMC_LLaMA_13B", rag=True, cache_dir=None):
@@ -305,10 +306,10 @@ class MedRAG:
         shuffle_results = []
 
         for _ in range(num_shuffles):
-            # Shuffle the options if enabled
-            shuffled_options = shuffle_option_labels(question["options"]) if shuffle else question["options"]
+            # Shuffle options and get the mapping to original labels
+            shuffled_options, original_mapping = shuffle_option_labels(question["options"]) if shuffle else (question["options"], {label: label for label in question["options"]})
             
-            # Build the prompt with the shuffled options
+            # Generate the prompt with the shuffled options
             prompt = build_zero_shot_prompt(system_prompt, {"question": question["question"], "options": shuffled_options})
             raw_answer = self.generate(prompt)
 
@@ -316,19 +317,19 @@ class MedRAG:
             extracted_choice = extract_answer_choice(raw_answer)
 
             if extracted_choice and extracted_choice in shuffled_options:
-                # Increment the count for the extracted choice
-                answer_counts[extracted_choice] += 1
-                # Record details for debugging or further analysis
-                shuffle_results.append((shuffled_options, extracted_choice, raw_answer))
+                # Map the shuffled choice back to the original label
+                original_label = original_mapping[extracted_choice]
+                answer_counts[original_label] += 1
+                shuffle_results.append((shuffled_options, original_label, raw_answer))
             else:
-                # If no valid choice is extracted, log as unknown
+                # If the answer is not valid, log as "Unknown"
                 shuffle_results.append((shuffled_options, "Unknown", raw_answer))
 
-        # Select the most consistent answer (most frequently occurring option letter)
-        most_consistent_answer, frequency = answer_counts.most_common(1)[0]
-        
+        # Determine the most consistent answer
+        most_common_answer, frequency = answer_counts.most_common(1)[0] if answer_counts else ("Unknown", 0)
+
         return {
-            "final_answer": most_consistent_answer,  # This should now be 'A', 'B', 'C', or 'D'
+            "final_answer": most_common_answer,  # This will now be one of 'A', 'B', 'C', or 'D'
             "frequency": frequency,
             "details": shuffle_results
         }
