@@ -4,7 +4,6 @@ import random
 import signal
 from src.medrag import MedRAG
 
-
 # Load the benchmark JSON file
 with open('mmlu-med.json', 'r') as f:
     benchmark_data = json.load(f)

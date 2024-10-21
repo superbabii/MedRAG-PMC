@@ -148,12 +148,10 @@ from transformers import AutoTokenizer
 from collections import Counter
 
 # Refined system prompt with explicit instructions for reasoning
-system_prompt = """You are a highly knowledgeable medical professional. 
-For each medical question with multiple-choice answers, think through each option carefully.
-Explain the reasoning step by step, considering why each choice is correct or incorrect.
-Conclude with a final answer and specify the corresponding letter choice.
-
-Follow this format:
+system_prompt = """You are an expert medical professional. You are provided with a medical question with multiple answer choices.
+Your goal is to think through the question carefully and explain your reasoning step by step before selecting the final answer.
+Respond only with the reasoning steps and answer as specified below.
+Below is the format for each question and answer:
 
 Input:
 ## Question: {{question}}
@@ -163,6 +161,18 @@ Output:
 ## Answer
 (Provide a detailed chain of thought explanation)
 Therefore, the answer is [final model answer (e.g., A, B, C, or D)]."""
+
+system_zero_shot_prompt = """You are an expert medical professional. You are provided with a medical question with multiple answer choices.
+Your goal is to think through the question carefully and respond directly with the answer option.
+Below is the format for each question and answer:
+
+Input:
+## Question: {{question}}
+{{answer_choices}}
+
+Output:
+## Answer
+Therefore, the answer is [final model answer (e.g. A,B,C,D)]"""
 
 def create_query(item, shuffled_options=None):
     # Use shuffled options if provided, otherwise fall back to original options
@@ -183,9 +193,9 @@ def format_answer(cot, answer):
 {cot}
 Therefore, the answer is {answer}"""
 
-def build_zero_shot_prompt(system_prompt, question):
+def build_zero_shot_prompt(system_zero_shot_prompt, question):
     # Builds a zero-shot prompt with only the system instructions and the current question
-    messages = [{"role": "system", "content": system_prompt},
+    messages = [{"role": "system", "content": system_zero_shot_prompt},
                 {"role": "user", "content": create_query(question)}]
     return messages
 
