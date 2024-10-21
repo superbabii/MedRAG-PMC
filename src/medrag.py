@@ -188,6 +188,69 @@ def build_zero_shot_prompt(system_prompt, question):
                 {"role": "user", "content": create_query(question)}]
     return messages
 
+examples = {
+    "anatomy-000": {
+    "question": "A lesion causing compression of the facial nerve at the stylomastoid foramen will cause ipsilateral",
+    "options": {
+        "A": "paralysis of the facial muscles.",
+        "B": "paralysis of the facial muscles and loss of taste.",
+        "C": "paralysis of the facial muscles, loss of taste and lacrimation.",
+        "D": "paralysis of the facial muscles, loss of taste, lacrimation and decreased salivation."
+    },
+    "answer": "A"
+    },
+    "anatomy-001": {
+    "question": "A \"dished face\" profile is often associated with",
+    "options": {
+        "A": "a protruding mandible due to reactivation of the condylar cartilage by acromegaly.",
+        "B": "a recessive maxilla due to failure of elongation of the cranial base.",
+        "C": "an enlarged frontal bone due to hydrocephaly.",
+        "D": "defective development of the maxillary air sinus."
+    },
+    "answer": "B"
+    },
+    "anatomy-002": {
+    "question": "Which of the following best describes the structure that collects urine in the body?",
+    "options": {
+        "A": "Bladder",
+        "B": "Kidney",
+        "C": "Ureter",
+        "D": "Urethra"
+    },
+    "answer": "A"
+    },
+    "anatomy-003": {
+    "question": "Which of the following structures is derived from ectomesenchyme?",
+    "options": {
+        "A": "Motor neurons",
+        "B": "Skeletal muscles",
+        "C": "Melanocytes",
+        "D": "Sweat glands"
+    },
+    "answer": "C"
+    },
+    "anatomy-004": {
+    "question": "Which of the following describes the cluster of blood capillaries found in each nephron in the kidney?",
+    "options": {
+        "A": "Afferent arteriole",
+        "B": "Glomerulus",
+        "C": "Loop of Henle",
+        "D": "Renal pelvis"
+    },
+    "answer": "B"
+    },
+    "anatomy-005": {
+    "question": "A patient suffers a broken neck with damage to the spinal cord at the level of the sixth cervical vertebra.",
+    "options": {
+        "A": "They will be unable to breathe without life support.",
+        "B": "They will only be able to breathe quietly.",
+        "C": "It is impossible to predict an effect on breathing.",
+        "D": "Breathing will be unaffected."
+    },
+    "answer": "B"
+    }
+}
+
 def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
     # Builds a few-shot prompt with examples for more effective learning
     messages = [{"role": "system", "content": system_prompt}]
@@ -195,9 +258,9 @@ def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
     for elem in examples:
         messages.append({"role": "user", "content": create_query(elem)})
         if include_cot:
-            messages.append({"role": "assistant", "content": format_answer(elem["cot"], elem["answer_idx"])})
+            messages.append({"role": "assistant", "content": format_answer(elem["cot"], elem["answer"])})
         else:
-            answer_string = f"""## Answer\nTherefore, the answer is {elem["answer_idx"]}"""
+            answer_string = f"""## Answer\nTherefore, the answer is {elem["answer"]}"""
             messages.append({"role": "assistant", "content": answer_string})
     
     messages.append({"role": "user", "content": create_query(question)})
@@ -308,7 +371,8 @@ class MedRAG:
             shuffled_options, original_mapping = shuffle_option_labels(question_data["options"]) if shuffle else (question_data["options"], {label: label for label in question_data["options"]})
             
             # Generate the prompt with the shuffled options
-            prompt = build_zero_shot_prompt(system_prompt, {"question": question_data["question"], "options": shuffled_options})
+            # prompt = build_zero_shot_prompt(system_prompt, {"question": question_data["question"], "options": shuffled_options})
+            prompt = build_few_shot_prompt(system_prompt, {"question": question_data["question"], "options": shuffled_options}, examples, include_cot=False)            
             raw_answer = self.generate(prompt)
 
             # Extract the option letter from the raw answer
