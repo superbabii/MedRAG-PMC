@@ -296,17 +296,25 @@ class MedRAG:
             return raw_output
 
     def medrag_answer(self, question, save_dir=None, num_ensembles=5, temperatures=[0.7, 0.8, 0.9]):
-        # Collect the ensemble of answers
         answers = []
-        
+        original_choices = list(question["options"].keys())
+
         for _ in range(num_ensembles):
             # Shuffle choices for diversity in each ensemble
-            prompt = build_zero_shot_prompt(system_prompt, question, shuffle=True)
+            prompt, shuffled_keys = create_query(question, shuffle=True)
+            shuffled_prompt = build_zero_shot_prompt(system_prompt, {"question": question["question"], "options": dict(zip(shuffled_keys, [question["options"][k] for k in shuffled_keys]))})
+
             # Randomly choose a temperature from the list
             temperature = random.choice(temperatures)
             # Generate an answer
-            answer = self.generate(prompt, temperature=temperature)
-            answers.append(answer)
+            generated_answer = self.generate(shuffled_prompt, temperature=temperature)
+
+            # Extract the answer from the generated response (it will refer to the shuffled order)
+            extracted_answer = self._extract_final_answer(generated_answer)
+
+            # Map the shuffled answer back to the original order (A, B, C, D)
+            original_answer_idx = self._map_answer_to_original(shuffled_keys, extracted_answer, original_choices)
+            answers.append(original_answer_idx)
 
         # Identify the most consistent answer (majority vote)
         most_common_answer = Counter(answers).most_common(1)[0][0]
@@ -320,3 +328,17 @@ class MedRAG:
             print(f"Response saved to {response_path}")
 
         return most_common_answer
+
+    def _extract_final_answer(self, response):
+        # This function extracts the letter choice from the generated answer text
+        match = re.search(r'Therefore, the answer is ([A-D])', response)
+        return match.group(1) if match else None
+
+    def _map_answer_to_original(self, shuffled_keys, answer, original_keys):
+        # Map the answer (based on shuffled choices) back to the original order (A, B, C, D)
+        if answer is None:
+            return None
+        # Find the index of the letter (A, B, C, D) in the shuffled order
+        answer_idx = shuffled_keys.index(answer)
+        # Return the corresponding original letter
+        return original_keys[answer_idx]
