@@ -148,10 +148,10 @@ from transformers import AutoTokenizer
 from collections import Counter
 
 # Refined system prompt with explicit instructions for reasoning
-system_prompt = """You are an expert medical professional. You are provided with a medical question with multiple answer choices.
-Your goal is to think through the question carefully and explain your reasoning step by step before selecting the final answer.
-Respond only with the reasoning steps and answer as specified below.
-Below is the format for each question and answer:
+system_prompt = """You are a highly knowledgeable medical professional. 
+For each medical question with multiple-choice answers, think through each option carefully.
+Explain the reasoning step by step, considering why each choice is correct or incorrect.
+Conclude with a final answer and specify the corresponding letter choice.
 
 Input:
 ## Question: {{question}}
@@ -193,9 +193,9 @@ def format_answer(cot, answer):
 {cot}
 Therefore, the answer is {answer}"""
 
-def build_zero_shot_prompt(system_zero_shot_prompt, question):
+def build_zero_shot_prompt(system_prompt, question):
     # Builds a zero-shot prompt with only the system instructions and the current question
-    messages = [{"role": "system", "content": system_zero_shot_prompt},
+    messages = [{"role": "system", "content": system_prompt},
                 {"role": "user", "content": create_query(question)}]
     return messages
 
