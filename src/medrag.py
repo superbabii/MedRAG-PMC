@@ -404,8 +404,8 @@ class MedRAG:
             shuffled_options, original_mapping = shuffle_option_labels(question_data["options"]) if shuffle else (question_data["options"], {label: label for label in question_data["options"]})
             
             # Generate the prompt with the shuffled options
-            # prompt = build_zero_shot_prompt(system_prompt, {"question": question_data["question"], "options": shuffled_options})
-            prompt = build_few_shot_prompt(system_prompt, {"question": question_data["question"], "options": shuffled_options}, examples, include_cot=False)            
+            prompt = build_zero_shot_prompt(system_prompt, {"question": question_data["question"], "options": shuffled_options})
+            # prompt = build_few_shot_prompt(system_prompt, {"question": question_data["question"], "options": shuffled_options}, examples, include_cot=False)            
             raw_answer = self.generate(prompt)
 
             # Extract the option letter from the raw answer
