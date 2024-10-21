@@ -305,31 +305,30 @@ class MedRAG:
         shuffle_results = []
 
         for _ in range(num_shuffles):
+            # Shuffle the options if enabled
             shuffled_options = shuffle_option_labels(question["options"]) if shuffle else question["options"]
             
-            # Generate the prompt with the shuffled options
+            # Build the prompt with the shuffled options
             prompt = build_zero_shot_prompt(system_prompt, {"question": question["question"], "options": shuffled_options})
             raw_answer = self.generate(prompt)
 
-            # Extract the answer choice, ensuring it's within the valid range (A-D)
-            extracted_choice = extract_answer_choice(raw_answer, max_option="D")
+            # Extract the option letter from the raw answer
+            extracted_choice = extract_answer_choice(raw_answer)
 
             if extracted_choice and extracted_choice in shuffled_options:
-                # Map back to the original shuffled answer text
-                mapped_answer = shuffled_options[extracted_choice]
+                # Increment the count for the extracted choice
+                answer_counts[extracted_choice] += 1
+                # Record details for debugging or further analysis
+                shuffle_results.append((shuffled_options, extracted_choice, raw_answer))
             else:
-                mapped_answer = "Unknown"  # Set to unknown if extraction failed or out of range
+                # If no valid choice is extracted, log as unknown
+                shuffle_results.append((shuffled_options, "Unknown", raw_answer))
 
-            # Tally the result and keep track of each shuffle's details
-            answer_counts[extracted_choice] += 1
-            shuffle_results.append((shuffled_options, extracted_choice, raw_answer))
-
-        # Select the most consistent answer (one of A, B, C, or D)
+        # Select the most consistent answer (most frequently occurring option letter)
         most_consistent_answer, frequency = answer_counts.most_common(1)[0]
         
-        # Return the final consistent answer as the original option letter
         return {
-            "final_answer": most_consistent_answer,  # Return the letter A, B, C, or D
+            "final_answer": most_consistent_answer,  # This should now be 'A', 'B', 'C', or 'D'
             "frequency": frequency,
             "details": shuffle_results
         }
