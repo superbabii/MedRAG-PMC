@@ -94,13 +94,17 @@ for question_id, question_data in all_questions:
     # Use MedRAG to generate the answer with a timeout
     # signal.alarm(30)  # Set alarm for 60 seconds
     try:
-        # Use MedRAG to generate the answer
-        generated_answer = cot.medrag_answer(question=question_data)
+        # Use MedRAG to generate the answer, considering shuffled robustness
+        result = cot.medrag_answer(question=question_data, shuffle=True, num_shuffles=5)
         
-        print(f"Generated Answer (Raw): {generated_answer}")
+        # Get the final consistent answer
+        final_answer = result["final_answer"]
+        frequency = result["frequency"]
+        
+        print(f"Generated Answer (Raw): {final_answer}")
         
         # Extract the generated answer choice
-        generated_choice = extract_answer_choice(generated_answer)
+        generated_choice = extract_answer_choice(final_answer)
 
         if not generated_choice:
             print(f"No valid answer choice extracted for question ID: {question_id}")
@@ -113,10 +117,13 @@ for question_id, question_data in all_questions:
         
         answered_questions += 1
         
+        # Calculate accuracy
         accuracy = correct_count / answered_questions * 100 if answered_questions > 0 else 0
+        print(f"Generated Answer (Final Consistent): {final_answer}")
         print(f"Correct Answer: {correct_answer}")
+        print(f"Frequency of Consistency: {frequency}")
         print(f"Is Correct: {is_correct}")
-        print(f"Current Accuracy: {accuracy:.2f}%")        
+        print(f"Current Accuracy: {accuracy:.2f}%")
         print(f"All Questions(Answered Questions): {number_all_questions}({answered_questions})")
         print('-' * 50)
 

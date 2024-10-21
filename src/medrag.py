@@ -164,30 +164,18 @@ Output:
 (Provide a detailed chain of thought explanation)
 Therefore, the answer is [final model answer (e.g., A, B, C, or D)]."""
 
-def create_query(item, shuffle=False):
-    # Enhanced query format with additional context
-    options = item["options"]
+def create_query(item, shuffled_options=None):
+    # Use shuffled options if provided, otherwise fall back to original options
+    options = shuffled_options if shuffled_options else item["options"]
     
-    # If shuffle is True, shuffle the order of the choices
-    if shuffle:
-        keys = list(options.keys())
-        random.shuffle(keys)
-        shuffled_options = {key: options[key] for key in keys}
-        shuffled_query = f"""## Question: Given the following medical scenario, analyze each option carefully:
-{item["question"]}
-A. {shuffled_options["A"]}
-B. {shuffled_options["B"]}
-C. {shuffled_options["C"]}
-D. {shuffled_options["D"]}"""
-        return shuffled_query, keys
-    else:
-        query = f"""## Question: Given the following medical scenario, analyze each option carefully:
+    # Enhanced query format with additional context
+    query = f"""## Question: Given the following medical scenario, analyze each option carefully:
 {item["question"]}
 A. {options["A"]}
 B. {options["B"]}
 C. {options["C"]}
 D. {options["D"]}"""
-        return query, list(options.keys())
+    return query
 
 def format_answer(cot, answer):
     # Formats the output as specified in the system prompt
@@ -195,11 +183,10 @@ def format_answer(cot, answer):
 {cot}
 Therefore, the answer is {answer}"""
 
-def build_zero_shot_prompt(system_prompt, question, shuffle=False):
-    # Builds a zero-shot prompt with optional choice shuffling
-    query, _ = create_query(question, shuffle)
+def build_zero_shot_prompt(system_prompt, question):
+    # Builds a zero-shot prompt with only the system instructions and the current question
     messages = [{"role": "system", "content": system_prompt},
-                {"role": "user", "content": query}]
+                {"role": "user", "content": create_query(question)}]
     return messages
 
 def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
@@ -207,15 +194,24 @@ def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
     messages = [{"role": "system", "content": system_prompt}]
     
     for elem in examples:
-        messages.append({"role": "user", "content": create_query(elem)[0]})
+        messages.append({"role": "user", "content": create_query(elem)})
         if include_cot:
             messages.append({"role": "assistant", "content": format_answer(elem["cot"], elem["answer_idx"])})
         else:
             answer_string = f"""## Answer\nTherefore, the answer is {elem["answer_idx"]}"""
             messages.append({"role": "assistant", "content": answer_string})
     
-    messages.append({"role": "user", "content": create_query(question)[0]})
+    messages.append({"role": "user", "content": create_query(question)})
     return messages 
+
+def shuffle_option_labels(answer_options):
+
+    options = list(answer_options.values())
+    random.shuffle(options)
+    labels = [chr(i) for i in range(ord('A'), ord('A') + len(options))]
+    shuffled_options_dict = {label: option for label, option in zip(labels, options)}
+    
+    return shuffled_options_dict
 
 class MedRAG:
     def __init__(self, llm_name="axiong/PMC_LLaMA_13B", rag=True, cache_dir=None):
@@ -246,7 +242,7 @@ class MedRAG:
             print("Tokenizer has no pad token, setting pad token to eos_token.")
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-    def generate(self, prompt, temperature=0.7):
+    def generate(self, prompt):
         # Convert list of messages to a single prompt string
         if isinstance(prompt, list):
             prompt = ' '.join([msg['content'] for msg in prompt if 'content' in msg])
@@ -268,7 +264,7 @@ class MedRAG:
                     max_length=self.max_length,  # Limit response length
                     do_sample=True,
                     top_k=50,
-                    temperature=temperature,
+                    temperature=0.7,
                     pad_token_id=self.tokenizer.pad_token_id
                 )
 
@@ -295,61 +291,58 @@ class MedRAG:
             # If "## Answer" is not found, return the original output
             return raw_output
 
-    def medrag_answer(self, question, save_dir=None, num_ensembles=5, temperatures=[0.7, 0.8, 0.9]):
-        answers = []
-        original_choices = list(question["options"].keys())
+    def medrag_answer(self, question, save_dir=None, shuffle=True, num_shuffles=5):
+        """
+        Generates answers for multiple shuffled versions of the question and selects the most consistent one.
+        
+        Args:
+            question (dict): The question and options in the format {"question": str, "options": dict}.
+            save_dir (str, optional): Directory to save the output.
+            shuffle (bool, optional): Whether to shuffle the options. Defaults to True.
+            num_shuffles (int, optional): Number of times to shuffle the options and generate answers.
+            
+        Returns:
+            dict: Final answer with details on the most consistent answer and frequency.
+        """
+        answer_counts = Counter()
+        shuffle_results = []
 
-        for _ in range(num_ensembles):
-            # Shuffle choices for diversity in each ensemble
-            prompt, shuffled_keys = create_query(question, shuffle=True)
-            shuffled_prompt = build_zero_shot_prompt(system_prompt, {"question": question["question"], "options": dict(zip(shuffled_keys, [question["options"][k] for k in shuffled_keys]))})
+        for _ in range(num_shuffles):
+            # Shuffle options if enabled
+            shuffled_options = shuffle_option_labels(question["options"]) if shuffle else question["options"]
+            
+            # Build the prompt for zero-shot learning using shuffled options
+            prompt = build_zero_shot_prompt(system_prompt, {"question": question["question"], "options": shuffled_options})
+            
+            # Generate the answer
+            answer = self.generate(prompt)
 
-            # Randomly choose a temperature from the list
-            temperature = random.choice(temperatures)
-            # Generate an answer
-            generated_answer = self.generate(shuffled_prompt, temperature=temperature)
+            # Map the answer back to the original labels if shuffled
+            original_labels = {v: k for k, v in shuffled_options.items()}
+            mapped_answer = original_labels.get(answer.split()[-1], "Unknown")
+            
+            # Record the mapped answer
+            answer_counts[mapped_answer] += 1
+            shuffle_results.append((shuffled_options, mapped_answer, answer))
 
-            # Extract the answer from the generated response (it will refer to the shuffled order)
-            extracted_answer = self._extract_final_answer(generated_answer)
-
-            # Map the shuffled answer back to the original order (A, B, C, D)
-            original_answer_idx = self._map_answer_to_original(shuffled_keys, extracted_answer, original_choices)
-            answers.append(original_answer_idx)
-
-        # Identify the most consistent answer (majority vote)
-        most_common_answer = Counter(answers).most_common(1)[0][0]
+        # Select the most consistent answer (highest frequency)
+        most_consistent_answer, frequency = answer_counts.most_common(1)[0]
 
         # Optionally save the result
         if save_dir:
             os.makedirs(save_dir, exist_ok=True)
             response_path = os.path.join(save_dir, "response.json")
             with open(response_path, 'w') as f:
-                json.dump({"answer": most_common_answer, "all_answers": answers}, f, indent=4)
+                json.dump({
+                    "final_answer": most_consistent_answer,
+                    "frequency": frequency,
+                    "details": shuffle_results
+                }, f, indent=4)
             print(f"Response saved to {response_path}")
 
-        return most_common_answer
-
-    def _extract_final_answer(self, response):
-        # First, ensure response is a valid string
-        if not isinstance(response, str):
-            print("Error: response is not a valid string.")
-            return None
-        
-        # Adjust the regex pattern to match the format of the generated response
-        # Assuming the format is: "Therefore, the answer is A" or similar
-        match = re.search(r'Therefore, the answer is\s+([A-D])', response, re.IGNORECASE)
-        
-        if match:
-            return match.group(1)
-        else:
-            print("Warning: Could not extract the answer from the response.")
-            return None
-
-    def _map_answer_to_original(self, shuffled_keys, answer, original_keys):
-        # Map the answer (based on shuffled choices) back to the original order (A, B, C, D)
-        if answer is None:
-            return None
-        # Find the index of the letter (A, B, C, D) in the shuffled order
-        answer_idx = shuffled_keys.index(answer)
-        # Return the corresponding original letter
-        return original_keys[answer_idx]
+        # Return the final answer and frequency details
+        return {
+            "final_answer": most_consistent_answer,
+            "frequency": frequency,
+            "details": shuffle_results
+        }
