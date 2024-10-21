@@ -271,7 +271,7 @@ class MedRAG:
                     inputs['input_ids'],
                     max_length=self.max_length,  # Limit response length
                     do_sample=True,
-                    top_k=50,
+                    top_p=1.0,
                     temperature=0.3,
                     pad_token_id=self.tokenizer.pad_token_id
                 )
