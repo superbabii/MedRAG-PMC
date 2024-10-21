@@ -253,47 +253,36 @@ def build_zero_shot_prompt(system_prompt, question):
 
 examples = [
     {
-        "question": "What is the primary function of the alveoli in the human respiratory system?",
-        "options": {
-            "A": "Filtering dust and foreign particles from the air.",
-            "B": "Warming and humidifying the air before it enters the lungs.",
-            "C": "Exchanging oxygen and carbon dioxide between the air and blood.",
-            "D": "Regulating the pH of the blood."
-        },
-        "answer": "C"
+      "question": "A lesion causing compression of the facial nerve at the stylomastoid foramen will cause ipsilateral",
+      "options": {
+        "A": "paralysis of the facial muscles.",
+        "B": "paralysis of the facial muscles and loss of taste.",
+        "C": "paralysis of the facial muscles, loss of taste and lacrimation.",
+        "D": "paralysis of the facial muscles, loss of taste, lacrimation and decreased salivation."
+      },
+      "answer": "A"
     },
     {
-        "question": "Which vitamin is primarily responsible for the coagulation of blood?",
-        "options": {
-            "A": "Vitamin A",
-            "B": "Vitamin D",
-            "C": "Vitamin E",
-            "D": "Vitamin K"
-        },
-        "answer": "D"
+      "question": "A \"dished face\" profile is often associated with",
+      "options": {
+        "A": "a protruding mandible due to reactivation of the condylar cartilage by acromegaly.",
+        "B": "a recessive maxilla due to failure of elongation of the cranial base.",
+        "C": "an enlarged frontal bone due to hydrocephaly.",
+        "D": "defective development of the maxillary air sinus."
+      },
+      "answer": "B"
     },
     {
-        "question": "What is the main structural protein found in connective tissues?",
-        "options": {
-            "A": "Elastin",
-            "B": "Keratin",
-            "C": "Collagen",
-            "D": "Actin"
-        },
-        "answer": "C"
-    }
+      "question": "Which of the following best describes the structure that collects urine in the body?",
+      "options": {
+        "A": "Bladder",
+        "B": "Kidney",
+        "C": "Ureter",
+        "D": "Urethra"
+      },
+      "answer": "A"
+    },
 ]
-
-question = {
-    "question": "Which organ is primarily responsible for filtering toxins from the blood?",
-    "options": {
-        "A": "Lungs",
-        "B": "Kidneys",
-        "C": "Liver",
-        "D": "Pancreas"
-    }
-}
-
 
 def build_few_shot_prompt(system_prompt, question, examples, include_cot=True):
     # Builds a few-shot prompt with examples for more effective learning
