@@ -94,7 +94,7 @@ for question_id, question_data in all_questions:
     # signal.alarm(30)  # Set alarm for 60 seconds
     try:
         # Use MedRAG to generate the answer, considering shuffled robustness
-        result = cot.medrag_answer(question=question_data, shuffle=True, num_shuffles=5)
+        result = cot.medrag_answer(question_data=question_data, shuffle=True, num_shuffles=5)
         
         # Get the final consistent answer
         final_answer = result["final_answer"]
