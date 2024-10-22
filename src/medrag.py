@@ -339,7 +339,7 @@ class MedRAG:
             most_common_answer = tied_answers[0] if tied_answers else "Unknown"
 
         return {
-            "final_answer": most_common_answer,  # This will now be one of 'A', 'B', 'C', or 'D'
+            "answer": most_common_answer,  # This will now be one of 'A', 'B', 'C', or 'D'
             "frequency": highest_frequency,
             "details": shuffle_results
         }

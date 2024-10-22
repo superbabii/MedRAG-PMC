@@ -97,7 +97,7 @@ for question_id, question_data in all_questions:
         result = cot.medrag_answer(question_data=question_data, shuffle=True, num_shuffles=5)
         
         # Get the final consistent answer
-        final_answer = result["final_answer"]
+        final_answer = result["answer"]
         frequency = result["frequency"]
         details = result["details"]
 
