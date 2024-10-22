@@ -123,16 +123,16 @@ for question_id, question_data in all_questions:
         if is_correct:
             correct_count += 1
         
-        answered_questions += 1
+        # answered_questions += 1
         
         # Calculate accuracy
-        accuracy = correct_count / answered_questions * 100 if answered_questions > 0 else 0
+        accuracy = correct_count / number_all_questions * 100 if number_all_questions > 0 else 0
         print(f"Generated Answer (Final Consistent): {final_answer}")
         print(f"Correct Answer: {correct_answer}")
         print(f"Frequency of Consistency: {frequency}")
         print(f"Is Correct: {is_correct}")
         print(f"Current Accuracy: {accuracy:.2f}%")
-        print(f"All Questions(Answered Questions): {number_all_questions}({answered_questions})")
+        print(f"All Questions(Answered Questions): {number_all_questions}")
         print('-' * 50)
 
     except TimeoutException:
